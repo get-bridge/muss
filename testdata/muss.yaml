@@ -1,0 +1,10 @@
+# This file is for manual testing.
+
+default_service_preference:
+  - registry
+  - repo
+
+service_files:
+  - ./app.yml
+  - ./microservice.yml
+  - ./store.yml

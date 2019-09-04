@@ -1,0 +1,37 @@
+version: '3.7'
+services:
+  web:
+    build: ./
+    command: [web]
+    entrypoint: [/app/entrypoint]
+    environment:
+      PANDA: BEAR
+      GIANT: bear cat
+      MSKEY: secret
+    volumes:
+      - 'deps:/deps'
+      - './:/app'
+  work:
+    build: ./
+    command: [work]
+    entrypoint: [/app/entrypoint]
+    environment:
+      PANDA: BEAR
+      GIANT: bear cat
+    volumes:
+      - 'deps:/deps'
+      - './:/app'
+  ms:
+    build: ../repo
+    volumes:
+      - 'msdeps:/deps'
+  store:
+    build: ./store
+    volumes:
+      - 'storedata:/data'
+    command:
+      - init
+volumes:
+  deps: {}
+  msdeps: {}
+  storedata: {}

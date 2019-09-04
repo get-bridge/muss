@@ -1,0 +1,13 @@
+---
+name: store
+
+configs:
+  internal:
+    volumes:
+      storedata: {}
+    services:
+      store:
+        build: ./store
+        volumes:
+          - 'storedata:/data'
+        command: [init]

@@ -1,0 +1,28 @@
+version: '3.7'
+services:
+  web:
+    image: thing
+    command: [web]
+    entrypoint: [/entrypoint]
+    environment:
+      PANDA: BEAR
+      MSKEY: reg
+    volumes:
+      - 'deps:/deps'
+  work:
+    image: thing
+    command: [work]
+    entrypoint: [/entrypoint]
+    environment:
+      PANDA: BEAR
+    volumes:
+      - 'deps:/deps'
+  ms:
+    image: reg:2
+  store:
+    build: ./store
+    volumes:
+      - 'storedata:/data'
+    command: [init]
+volumes:
+  storedata: {}

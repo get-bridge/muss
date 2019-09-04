@@ -1,0 +1,46 @@
+---
+name: app
+
+configs:
+  _base:
+    services:
+      web: &w1
+        entrypoint: [/entrypoint]
+        environment:
+          PANDA: BEAR
+        command: [nope]
+        volumes:
+          - 'deps:/deps'
+      work: *w1
+
+  _base_frd:
+    services:
+      web: &w2
+        command: [web]
+      work:
+        command: [work]
+
+  repo:
+    include:
+      - _base
+      - _base_frd
+    volumes:
+      deps: {}
+    services:
+      web: &w3
+        build: ./
+        environment:
+          GIANT: bear cat
+        volumes:
+          - './:/app'
+        entrypoint: [/app/entrypoint]
+      work: *w3
+
+  registry:
+    include:
+      - _base
+      - _base_frd
+    services:
+      web: &w4
+        image: thing
+      work: *w4

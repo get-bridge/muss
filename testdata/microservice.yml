@@ -1,0 +1,30 @@
+---
+name: microservice
+
+configs:
+  repo:
+    volumes:
+      msdeps: {}
+    services:
+      ms:
+        build: ../repo
+        volumes:
+          - 'msdeps:/deps'
+      web:
+        environment:
+          MSKEY: secret
+
+  remote:
+    services:
+      web:
+        environment:
+          MSKEY: remote
+
+  registry:
+    services:
+      ms:
+        image: reg:2
+      web:
+        environment:
+          MSKEY: reg
+
