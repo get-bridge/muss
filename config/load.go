@@ -3,6 +3,7 @@ package config
 import (
 	"io/ioutil"
 	"log"
+	"os"
 
 	yaml "gopkg.in/yaml.v2"
 )
@@ -38,6 +39,20 @@ func prepare(object map[string]interface{}) (ProjectConfig, error) {
 		// TODO: else: mention that they might want service_files?
 	}
 
+	if UserFile != "" {
+		prepared["user_file"] = UserFile
+	}
+
+	if file, ok := prepared["user_file"].(string); ok {
+		if fileExists(file) {
+			user, err := readYamlFile(file)
+			if err != nil {
+				return nil, err
+			}
+			prepared["user"] = user
+		}
+	}
+
 	return prepared, nil
 }
 
@@ -52,6 +67,13 @@ func loadServiceDefs(files []string) ([]ServiceDef, error) {
 		defs[i] = service
 	}
 	return defs, nil
+}
+
+func fileExists(file string) bool {
+	if _, err := os.Stat(file); os.IsNotExist(err) {
+		return false
+	}
+	return true
 }
 
 func readYamlFile(file string) (map[string]interface{}, error) {

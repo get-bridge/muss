@@ -1,5 +1,7 @@
 # This file is for manual testing.
 
+user_file: muss.user.yaml
+
 default_service_preference:
   - registry
   - repo

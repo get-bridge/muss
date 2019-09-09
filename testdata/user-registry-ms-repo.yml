@@ -1,0 +1,6 @@
+---
+service_preference:
+  - registry
+services:
+  microservice:
+    config: repo

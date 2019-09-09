@@ -13,16 +13,31 @@ func Save() {
 }
 
 func generateFiles(cfg ProjectConfig) {
-	composeBytes := yamlDump(DockerComposeConfig(cfg))
+	dc, err := DockerComposeConfig(cfg)
+	if err != nil {
+		log.Fatalln("Error creating docker-compose config:\n", err)
+	}
+	composeBytes := yamlDump(dc)
 
 	if dc, err := os.Create(DockerComposeFile); err == nil {
-		dc.Write(append([]byte(`#
+		content := []byte(`#
 # THIS FILE IS GENERATED!
 #
-# To add new service definition files edit `+ProjectFile+`.
+# To add new service definition files edit ` + ProjectFile + `.
 #
----
-`), composeBytes...))
+`)
+
+		if file, ok := cfg["user_file"]; ok {
+			content = append(content,
+				[]byte("# To configure the services you want to use edit "+file.(string)+".\n#\n")...)
+		}
+
+		content = append(content, []byte("\n---\n")...)
+		content = append(content, composeBytes...)
+
+		if _, err := dc.Write(content); err != nil {
+			log.Fatalln("Error writing to file:", err)
+		}
 	} else {
 		log.Fatalln("Failed to open file for writing:", err)
 	}

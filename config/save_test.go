@@ -22,11 +22,14 @@ func TestConfigSave(t *testing.T) {
 		t.Fatalf("Failed to get current dir: %s\n", err)
 	}
 
+	UserFile = "muss.test.yaml"
+
 	dir := tempdir(t)
 	os.Chdir(dir)
 	defer func() {
 		os.Chdir(cwd)
 		os.RemoveAll(dir)
+		UserFile = ""
 	}()
 
 	t.Run("config save", func(t *testing.T) {
@@ -66,6 +69,12 @@ func TestConfigSave(t *testing.T) {
 				string(written),
 				"# To add new service definition files edit "+ProjectFile+".",
 				"contains generated comments",
+			)
+
+			assert.Contains(t,
+				string(written),
+				"# To configure the services you want to use edit "+UserFile+".",
+				"contains user file comments",
 			)
 
 			parsed, err := parseYaml(written)

@@ -1,12 +1,16 @@
 package config
 
+import (
+	"fmt"
+)
+
 // DockerComposeFile is the path to the docker-compose file that will be
 // generated.
 var DockerComposeFile = "docker-compose.yml"
 
 // DockerComposeConfig returns an object ready to be yaml-dumped as a
-// docker-compose file.
-func DockerComposeConfig(config ProjectConfig) map[string]interface{} {
+// docker-compose file (or an error).
+func DockerComposeConfig(config ProjectConfig) (map[string]interface{}, error) {
 	// Setup a base to merge things onto.
 	dcc := map[string]interface{}{
 		"version":  "3.7", // latest
@@ -25,35 +29,71 @@ func DockerComposeConfig(config ProjectConfig) map[string]interface{} {
 	}
 
 	for _, service := range servdefs {
-		servconf := serviceConfig(config, service)
+		servconf, err := serviceConfig(config, service)
+		if err != nil {
+			return nil, err
+		}
 
 		dcc = mapMerge(dcc, servconf)
 	}
-	return dcc
+	return dcc, nil
 }
 
-func serviceConfig(config map[string]interface{}, service ServiceDef) map[string]interface{} {
+func serviceConfig(config map[string]interface{}, service ServiceDef) (map[string]interface{}, error) {
 	serviceName := service["name"].(string)
 	serviceConfigs := service["configs"].(map[string]interface{})
 	options := mapKeys(serviceConfigs)
 
+	var userConfig map[string]interface{}
+	if user, ok := config["user"].(map[string]interface{}); ok {
+		userConfig = user
+	}
+
 	var result map[string]interface{}
+
+	// Check if user configured a specific choice for this service:
+	// `services: {somename: {config: choice}}`
 	userChoice := ""
-	// TODO: check user.services.config for a name
+	if userServices, ok := userConfig["services"].(map[string]interface{}); ok {
+		if userserv, ok := userServices[serviceName].(map[string]interface{}); ok {
+			if val, ok := userserv["config"].(string); ok {
+				userChoice = val
+				if _, ok := serviceConfigs[userChoice]; !ok {
+					return nil, fmt.Errorf("Config '%s' for service '%s' does not exist", userChoice, serviceName)
+				}
+			}
+		}
+	}
+
 	if userChoice != "" {
-		result = serviceConfigs[serviceName].(map[string]interface{})
+		// If user chose specifically, use it.
+		result = serviceConfigs[userChoice].(map[string]interface{})
 	} else if len(options) == 1 {
+		// If there is only one option, use it.
 		result = serviceConfigs[options[0]].(map[string]interface{})
 	} else {
 
-		// TODO: merge user config
-		order := config["default_service_preference"].([]interface{})
+		// To determine which config option to use we can build a list...
+		var order []string
+
+		// starting with any user configured preference
+		if slice, ok := stringSlice(userConfig["service_preference"]); ok {
+			order = append(order, slice...)
+		}
+
+		// followed by any project defaults
+		if slice, ok := stringSlice(config["default_service_preference"]); ok {
+			order = append(order, slice...)
+		}
+
+		// then iterate and use the first preference that this service defines.
 		for _, o := range order {
-			if found, ok := serviceConfigs[o.(string)]; ok {
+			if found, ok := serviceConfigs[o]; ok {
 				result = found.(map[string]interface{})
 				break
 			}
 		}
+
 	}
 	// TODO: recurse
 	if includes, ok := result["include"].([]interface{}); ok {
@@ -64,7 +104,7 @@ func serviceConfig(config map[string]interface{}, service ServiceDef) map[string
 		}
 		result = mapMerge(base, result)
 	}
-	return result
+	return result, nil
 }
 
 var keysToOverwrite = []string{"entrypoint", "command"}

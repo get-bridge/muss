@@ -6,6 +6,9 @@ var DefaultFile = "muss.yaml"
 // ProjectFile is the path to the project config file.
 var ProjectFile = DefaultFile
 
+// UserFile is the path to the user config file, if defined.
+var UserFile string
+
 // ProjectConfig is a type for the parsed contents of the project config file.
 type ProjectConfig map[string]interface{}
 

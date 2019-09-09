@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/spf13/cobra"
 
 	cmdconfig "gerrit.instructure.com/muss/cmd/config"
@@ -38,4 +40,5 @@ func initConfig() {
 	if cfgFile != "" {
 		config.ProjectFile = cfgFile
 	}
+	config.UserFile = os.Getenv("MUSS_USER_FILE")
 }

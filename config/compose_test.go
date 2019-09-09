@@ -19,8 +19,32 @@ func readFile(t *testing.T, path string) string {
 	return string(content)
 }
 
+func parseAndCompose(config string) (parsed ProjectConfig, err error) {
+	parsed, err = parseYaml([]byte(config))
+	if err != nil {
+		return
+	}
+
+	parsed, err = prepare(parsed)
+	if err != nil {
+		return
+	}
+
+	parsed, err = DockerComposeConfig(parsed)
+
+	return
+}
+
+func assertConfigError(t *testing.T, config, expErr string, msgAndArgs ...interface{}) {
+	_, err := parseAndCompose(config)
+	if err == nil {
+		t.Fatal("expected error, found nil")
+	}
+	assert.Contains(t, err.Error(), expErr, msgAndArgs...)
+}
+
 func assertComposed(t *testing.T, config, exp string, msgAndArgs ...interface{}) {
-	var parsedExp, parsedConfig map[string]interface{}
+	var parsedExp, dc map[string]interface{}
 	var err error
 
 	parsedExp, err = parseYaml([]byte(exp))
@@ -28,19 +52,14 @@ func assertComposed(t *testing.T, config, exp string, msgAndArgs ...interface{})
 		t.Fatalf("Error parsing exp yaml: %s", err)
 	}
 
-	parsedConfig, err = parseYaml([]byte(config))
-	if err != nil {
-		t.Fatalf("Error parsing config yaml: %s", err)
-	}
-
-	parsedConfig, err = prepare(parsedConfig)
+	dc, err = parseAndCompose(config)
 	if err != nil {
 		t.Fatalf("Error parsing config: %s", err)
 	}
 
 	assert.Equal(t,
 		parsedExp,
-		DockerComposeConfig(parsedConfig),
+		dc,
 		msgAndArgs...)
 }
 
@@ -59,18 +78,61 @@ default_service_preference: [repo, registry]
 default_service_preference: [registry, repo]
 `
 
+	userRepo := `
+user: {service_preference: [repo, registry]}
+`
+
+	userRegistry := `
+user: {service_preference: [registry, repo]}
+`
+
 	expRepo := readFile(t, "../testdata/expectations/repo.yml")
 	expRegistry := readFile(t, "../testdata/expectations/registry.yml")
 
 	t.Run("repo preference", func(t *testing.T) {
 		config := preferRepo + serviceFiles
 		assertComposed(t, config, expRepo, "Config with repo preference")
-		// TODO: user pref
+
+		assertComposed(t, (config + userRegistry), expRegistry, "user preference overrides")
 	})
 
 	t.Run("registry preference", func(t *testing.T) {
 		config := preferRegistry + serviceFiles
 		assertComposed(t, config, expRegistry, "Config with registry preference")
-		// TODO: user pref
+
+		assertComposed(t, (config + userRepo), expRepo, "user preference overrides")
+	})
+
+	t.Run("user custom service config", func(t *testing.T) {
+		config := preferRepo + serviceFiles + `
+user_file: ../testdata/user-registry-ms-repo.yml
+`
+
+		exp := readFile(t, "../testdata/expectations/user-registry-ms-repo.yml")
+
+		assertComposed(t, config, exp, "user preference overrides orders")
+	})
+
+	t.Run("config errors", func(t *testing.T) {
+		assertComposed(t,
+			(preferRegistry + serviceFiles + `
+user:
+  services:
+    microservice: {}
+`),
+			expRegistry,
+			"No error on empty service config")
+
+		assertConfigError(t,
+			`
+service_files:
+  - ../testdata/microservice.yml
+user:
+  services:
+    microservice:
+      config: not-found
+`,
+			"Config 'not-found' for service 'microservice' does not exist",
+			"Errors for not-found user service config choice")
 	})
 }
