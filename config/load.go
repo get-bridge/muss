@@ -7,16 +7,22 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
+// SetConfig sets the global config to the provided arg
+// (used internally for testing).
+func SetConfig(cfg ProjectConfig) {
+	prepared, err := prepare(cfg)
+	if err != nil {
+		log.Fatalln("Failed to process config:", err)
+	}
+	project = prepared
+}
+
 func load() {
 	object, err := readYamlFile(ProjectFile)
 	if err != nil {
 		log.Fatalf("Failed to read config file '%s': %s\n", ProjectFile, err)
 	}
-
-	project, err = prepare(object)
-	if err != nil {
-		log.Fatalln("Failed to parse config:", err)
-	}
+	SetConfig(object)
 }
 
 func prepare(object map[string]interface{}) (ProjectConfig, error) {

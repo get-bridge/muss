@@ -12,8 +12,10 @@ func NewCommand() *cobra.Command {
 		Long:  `Work with muss configuration.`,
 	}
 
-	// Subcommands
-	cmd.AddCommand(newSaveCommand())
+	cmd.AddCommand(
+		newSaveCommand(),
+		newShowCommand(),
+	)
 
 	return cmd
 }
