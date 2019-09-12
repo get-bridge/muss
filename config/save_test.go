@@ -39,6 +39,7 @@ func TestConfigSave(t *testing.T) {
 			"volumes": map[string]interface{}{},
 			"services": map[string]interface{}{
 				"app": map[string]interface{}{
+					"image": "alpine",
 					"environment": map[string]interface{}{
 						"FOO": "bar",
 					},

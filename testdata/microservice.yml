@@ -13,6 +13,9 @@ configs:
       web:
         environment:
           MSKEY: secret
+      ms2:
+        environment:
+          JUST_TO_PROVE: that no "ms" service is created
 
   remote:
     services:

@@ -36,6 +36,19 @@ func DockerComposeConfig(config ProjectConfig) (map[string]interface{}, error) {
 
 		dcc = mapMerge(dcc, servconf)
 	}
+
+	if services, ok := (dcc["services"]).(map[string]interface{}); ok {
+		for name, si := range services {
+			if service, ok := si.(map[string]interface{}); ok {
+
+				if !isValidService(service) {
+					delete(services, name)
+				}
+
+			}
+		}
+	}
+
 	return dcc, nil
 }
 
@@ -105,6 +118,16 @@ func serviceConfig(config map[string]interface{}, service ServiceDef) (map[strin
 		result = mapMerge(base, result)
 	}
 	return result, nil
+}
+
+func isValidService(service map[string]interface{}) bool {
+	if _, ok := service["build"]; ok {
+		return true
+	}
+	if _, ok := service["image"]; ok {
+		return true
+	}
+	return false
 }
 
 var keysToOverwrite = []string{"entrypoint", "command"}
