@@ -113,6 +113,25 @@ user_file: ../testdata/user-registry-ms-repo.yml
 		assertComposed(t, config, exp, "user preference overrides orders")
 	})
 
+	t.Run("user override", func(t *testing.T) {
+		config := preferRegistry + serviceFiles + `
+user:
+  override:
+    version: '3.5'
+    volumes: {overdeps: {}}
+    services:
+      ms:
+        environment:
+          OVERRIDE: oh, the power!
+      work:
+        volumes: [overdeps:/var/deps]
+`
+
+		exp := readFile(t, "../testdata/expectations/registry-user-override.yml")
+
+		assertComposed(t, config, exp, "user preference overrides orders")
+	})
+
 	t.Run("config errors", func(t *testing.T) {
 		assertComposed(t,
 			(preferRegistry + serviceFiles + `

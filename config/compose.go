@@ -23,6 +23,11 @@ func DockerComposeConfig(config ProjectConfig) (map[string]interface{}, error) {
 func DockerComposeFiles(config ProjectConfig) (map[string]interface{}, map[string]func(string) error, error) {
 	files := make(map[string]func(string) error)
 
+	var user map[string]interface{}
+	if u, ok := config["user"].(map[string]interface{}); ok {
+		user = u
+	}
+
 	// Setup a base to merge things onto.
 	dcc := map[string]interface{}{
 		"version":  "3.7", // latest
@@ -47,6 +52,10 @@ func DockerComposeFiles(config ProjectConfig) (map[string]interface{}, map[strin
 		}
 
 		dcc = mapMerge(dcc, servconf)
+	}
+
+	if override, ok := user["override"].(map[string]interface{}); ok {
+		dcc = mapMerge(dcc, override)
 	}
 
 	if services, ok := (dcc["services"]).(map[string]interface{}); ok {
