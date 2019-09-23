@@ -11,6 +11,18 @@ var DockerComposeFile = "docker-compose.yml"
 // DockerComposeConfig returns an object ready to be yaml-dumped as a
 // docker-compose file (or an error).
 func DockerComposeConfig(config ProjectConfig) (map[string]interface{}, error) {
+	dcc, _, err := DockerComposeFiles(config)
+	return dcc, err
+}
+
+// DockerComposeFiles returns a map of the docker-compose config,
+// a map representing supplementary files, and an error.
+// The files value is a `map[string]func(string) error` where the key is
+// the file path and the value is a function that takes the path argument
+// and writes the file or errors.
+func DockerComposeFiles(config ProjectConfig) (map[string]interface{}, map[string]func(string) error, error) {
+	files := make(map[string]func(string) error)
+
 	// Setup a base to merge things onto.
 	dcc := map[string]interface{}{
 		"version":  "3.7", // latest
@@ -31,7 +43,7 @@ func DockerComposeConfig(config ProjectConfig) (map[string]interface{}, error) {
 	for _, service := range servdefs {
 		servconf, err := serviceConfig(config, service)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		dcc = mapMerge(dcc, servconf)
@@ -41,6 +53,10 @@ func DockerComposeConfig(config ProjectConfig) (map[string]interface{}, error) {
 		for name, si := range services {
 			if service, ok := si.(map[string]interface{}); ok {
 
+				for _, filevol := range findFileVolumes(service) {
+					files[filevol] = ensureFile
+				}
+
 				if !isValidService(service) {
 					delete(services, name)
 				}
@@ -49,7 +65,7 @@ func DockerComposeConfig(config ProjectConfig) (map[string]interface{}, error) {
 		}
 	}
 
-	return dcc, nil
+	return dcc, files, nil
 }
 
 func serviceConfig(config map[string]interface{}, service ServiceDef) (map[string]interface{}, error) {
@@ -128,6 +144,28 @@ func isValidService(service map[string]interface{}) bool {
 		return true
 	}
 	return false
+}
+
+// Look for volumes marked as "file" (muss extension) and make sure they are
+// files to avoid the terrible confusion that ensues when docker creates a
+// directory where you expected a file.
+// > NOTE: File must exist, else "It is always created as a directory".
+// > https://docs.docker.com/storage/bind-mounts/#differences-between--v-and---mount-behavior
+func findFileVolumes(service map[string]interface{}) []string {
+	var filevols []string
+	if volumes, ok := service["volumes"].([]interface{}); ok {
+		for _, volume := range volumes {
+			if v, ok := volume.(map[string]interface{}); ok {
+				if v["type"] == "bind" {
+					if file, ok := v["file"].(bool); ok && file {
+						filevols = append(filevols, expand(v["source"].(string)))
+						delete(v, "file")
+					}
+				}
+			}
+		}
+	}
+	return filevols
 }
 
 var keysToOverwrite = []string{"entrypoint", "command"}

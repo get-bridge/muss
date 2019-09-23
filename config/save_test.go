@@ -43,6 +43,14 @@ func TestConfigSave(t *testing.T) {
 					"environment": map[string]interface{}{
 						"FOO": "bar",
 					},
+					"volumes": []interface{}{
+						"./foo:/bar",
+						map[string]interface{}{
+							"type":   "bind",
+							"source": "./vol/file",
+							"target": "/filevol",
+						},
+					},
 				},
 			},
 		}
@@ -51,7 +59,27 @@ func TestConfigSave(t *testing.T) {
 				map[string]interface{}{
 					"name": "app",
 					"configs": map[string]interface{}{
-						"sole": exp,
+						"sole": map[string]interface{}{
+							"version": "3.6",
+							"volumes": map[string]interface{}{},
+							"services": map[string]interface{}{
+								"app": map[string]interface{}{
+									"image": "alpine",
+									"environment": map[string]interface{}{
+										"FOO": "bar",
+									},
+									"volumes": []interface{}{
+										"./foo:/bar",
+										map[string]interface{}{
+											"type":   "bind",
+											"source": "./vol/file",
+											"target": "/filevol",
+											"file":   true,
+										},
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -63,7 +91,7 @@ func TestConfigSave(t *testing.T) {
 		assert.NotNil(t, project, "Save loads project config first")
 
 		if written, err := ioutil.ReadFile(DockerComposeFile); err != nil {
-			t.Fatalf("failed to open generated file: %s\n", err)
+			t.Fatalf("failed to open generated file: %s", err)
 		} else {
 
 			assert.Contains(t,
@@ -84,5 +112,30 @@ func TestConfigSave(t *testing.T) {
 			}
 			assert.EqualValues(t, exp, parsed, "Generated docker-compose yaml")
 		}
+
+		if stat, err := os.Stat("./vol/file"); err != nil {
+			t.Fatalf("failed to create file for volume: %s", err)
+		} else {
+			assert.True(t, stat.Mode().IsRegular(), "plain file")
+		}
+	})
+
+	t.Run("ensureFile", func(t *testing.T) {
+		if err := os.MkdirAll("foo/bar/baz", 0777); err != nil {
+			t.Fatalf("failed to mkdir: %s", err)
+		}
+		if err := ensureFile("foo/bar"); err == nil {
+			t.Fatal("expected error, got none")
+		} else {
+			assert.Equal(t, "remove foo/bar: directory not empty", err.Error())
+		}
+
+		err := ensureFile("foo/bar/baz")
+		assert.Nil(t, err, "no error changing dir to file")
+		assert.FileExists(t, "foo/bar/baz")
+
+		again := ensureFile("foo/bar/baz")
+		assert.Nil(t, again, "no error when already a file")
+		assert.FileExists(t, "foo/bar/baz")
 	})
 }

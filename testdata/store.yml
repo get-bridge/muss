@@ -10,4 +10,14 @@ configs:
         build: ./store
         volumes:
           - 'storedata:/data'
+          - type: bind
+            source: './somedir'
+            target: '/var/somedir'
+            # ensure a bind mount without "file" doesn't error
+          - type: bind
+            source: '${MUSS_TEST_FILE_VOL:-./vol}/file'
+            target: '/var/somefile'
+            read_only: true
+            file: true
+            consistency: cached
         command: [init]

@@ -3,6 +3,7 @@ package config
 import (
 	"log"
 	"os"
+	"path"
 
 	yaml "gopkg.in/yaml.v2"
 )
@@ -12,8 +13,35 @@ func Save() {
 	generateFiles(All())
 }
 
+func ensureFile(file string) error {
+	if err := os.MkdirAll(path.Dir(file), 0777); err != nil {
+		return err
+	}
+	if stat, err := os.Stat(file); err != nil {
+		if !os.IsNotExist(err) {
+			return err
+		}
+	} else if stat.IsDir() {
+		// if empty remove it, else complain
+		if err := os.Remove(file); err != nil {
+			return err
+		}
+	} else {
+		// already a file.
+		return nil
+	}
+
+	if file, err := os.Create(file); err == nil {
+		file.Close()
+	} else {
+		return err
+	}
+
+	return nil
+}
+
 func generateFiles(cfg ProjectConfig) {
-	dc, err := DockerComposeConfig(cfg)
+	dc, files, err := DockerComposeFiles(cfg)
 	if err != nil {
 		log.Fatalln("Error creating docker-compose config:\n", err)
 	}
@@ -40,6 +68,12 @@ func generateFiles(cfg ProjectConfig) {
 		}
 	} else {
 		log.Fatalln("Failed to open file for writing:", err)
+	}
+
+	for path, fn := range files {
+		if err := fn(path); err != nil {
+			log.Fatalln("Failed to save file:", err)
+		}
 	}
 
 	// TODO: secrets files
