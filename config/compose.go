@@ -2,6 +2,8 @@ package config
 
 import (
 	"fmt"
+
+	homedir "github.com/mitchellh/go-homedir"
 )
 
 // DockerComposeFile is the path to the docker-compose file that will be
@@ -62,7 +64,11 @@ func DockerComposeFiles(config ProjectConfig) (map[string]interface{}, map[strin
 		for name, si := range services {
 			if service, ok := si.(map[string]interface{}); ok {
 
-				for _, filevol := range findFileVolumes(service) {
+				filevols, err := findFileVolumes(service)
+				if err != nil {
+					return nil, nil, err
+				}
+				for _, filevol := range filevols {
 					files[filevol] = ensureFile
 				}
 
@@ -160,21 +166,25 @@ func isValidService(service map[string]interface{}) bool {
 // directory where you expected a file.
 // > NOTE: File must exist, else "It is always created as a directory".
 // > https://docs.docker.com/storage/bind-mounts/#differences-between--v-and---mount-behavior
-func findFileVolumes(service map[string]interface{}) []string {
+func findFileVolumes(service map[string]interface{}) ([]string, error) {
 	var filevols []string
 	if volumes, ok := service["volumes"].([]interface{}); ok {
 		for _, volume := range volumes {
 			if v, ok := volume.(map[string]interface{}); ok {
 				if v["type"] == "bind" {
 					if file, ok := v["file"].(bool); ok && file {
-						filevols = append(filevols, expand(v["source"].(string)))
+						expanded, err := homedir.Expand(expand(v["source"].(string)))
+						if err != nil {
+							return nil, err
+						}
+						filevols = append(filevols, expanded)
 						delete(v, "file")
 					}
 				}
 			}
 		}
 	}
-	return filevols
+	return filevols, nil
 }
 
 var keysToOverwrite = []string{"entrypoint", "command"}

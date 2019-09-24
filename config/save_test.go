@@ -3,6 +3,7 @@ package config
 import (
 	"io/ioutil"
 	"os"
+	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,9 +25,13 @@ func TestConfigSave(t *testing.T) {
 
 	UserFile = "muss.test.yaml"
 
+	os.Unsetenv("MUSS_TEST_VAR")
+	home := os.Getenv("HOME")
 	dir := tempdir(t)
+	os.Setenv("HOME", path.Join(dir, "test-home"))
 	os.Chdir(dir)
 	defer func() {
+		os.Setenv("HOME", home)
 		os.Chdir(cwd)
 		os.RemoveAll(dir)
 		UserFile = ""
@@ -47,7 +52,7 @@ func TestConfigSave(t *testing.T) {
 						"./foo:/bar",
 						map[string]interface{}{
 							"type":   "bind",
-							"source": "./vol/file",
+							"source": "${MUSS_TEST_VAR:-~/vol}/file",
 							"target": "/filevol",
 						},
 					},
@@ -72,7 +77,7 @@ func TestConfigSave(t *testing.T) {
 										"./foo:/bar",
 										map[string]interface{}{
 											"type":   "bind",
-											"source": "./vol/file",
+											"source": "${MUSS_TEST_VAR:-~/vol}/file",
 											"target": "/filevol",
 											"file":   true,
 										},
@@ -113,7 +118,7 @@ func TestConfigSave(t *testing.T) {
 			assert.EqualValues(t, exp, parsed, "Generated docker-compose yaml")
 		}
 
-		if stat, err := os.Stat("./vol/file"); err != nil {
+		if stat, err := os.Stat("./test-home/vol/file"); err != nil {
 			t.Fatalf("failed to create file for volume: %s", err)
 		} else {
 			assert.True(t, stat.Mode().IsRegular(), "plain file")
