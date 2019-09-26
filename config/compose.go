@@ -2,6 +2,8 @@ package config
 
 import (
 	"fmt"
+	"path"
+	"strings"
 
 	homedir "github.com/mitchellh/go-homedir"
 )
@@ -64,12 +66,12 @@ func DockerComposeFiles(config ProjectConfig) (map[string]interface{}, map[strin
 		for name, si := range services {
 			if service, ok := si.(map[string]interface{}); ok {
 
-				filevols, err := findFileVolumes(service)
+				bindvols, err := prepareVolumes(service)
 				if err != nil {
 					return nil, nil, err
 				}
-				for _, filevol := range filevols {
-					files[filevol] = ensureFile
+				for path, fn := range bindvols {
+					files[path] = fn
 				}
 
 				if !isValidService(service) {
@@ -161,30 +163,90 @@ func isValidService(service map[string]interface{}) bool {
 	return false
 }
 
-// Look for volumes marked as "file" (muss extension) and make sure they are
-// files to avoid the terrible confusion that ensues when docker creates a
-// directory where you expected a file.
-// > NOTE: File must exist, else "It is always created as a directory".
-// > https://docs.docker.com/storage/bind-mounts/#differences-between--v-and---mount-behavior
-func findFileVolumes(service map[string]interface{}) ([]string, error) {
-	var filevols []string
-	if volumes, ok := service["volumes"].([]interface{}); ok {
-		for _, volume := range volumes {
-			if v, ok := volume.(map[string]interface{}); ok {
-				if v["type"] == "bind" {
-					if file, ok := v["file"].(bool); ok && file {
-						expanded, err := homedir.Expand(expand(v["source"].(string)))
-						if err != nil {
-							return nil, err
+// Iterate over the volumes for this service looking for files (muss extension)
+// or directories and pre-create them when we can to avoid the issues of
+// docker creating a directory where we wanted a file
+// or creating a directory now owned by root when the user should own it.
+// NOTE: This currently assumes unix-like (forward slash) paths.
+func prepareVolumes(service map[string]interface{}) (map[string]func(string) error, error) {
+	prepare := make(map[string]func(string) error)
+	wdTargets := make(map[string]string)
+
+	// First try to find if we are bind-mounting the current dir (or child dirs).
+	if err := iterateBindMounts(service, func(source, target string, volume map[string]interface{}) {
+		// Don't clean the source (yet) because it's the leading "./" that
+		// determines if this is a bind mount.
+		if source == "." || strings.HasPrefix(source, "./") {
+			wdTargets[endWithPathSep(target)] = endWithPathSep(source)
+		}
+	}); err != nil {
+		return nil, err
+	}
+
+	if err := iterateBindMounts(service, func(source, target string, volume map[string]interface{}) {
+		// > NOTE: File must exist, else "It is always created as a directory".
+		// > https://docs.docker.com/storage/bind-mounts/#differences-between--v-and---mount-behavior
+		if file, ok := volume["file"].(bool); ok && file {
+			prepare[path.Clean(source)] = ensureFile
+			// docker-compose will abort if it gets a key it doesn't recognize.
+			delete(volume, "file")
+		} else {
+			// If we are bind mounting a dir ensure it exists
+			// else docker will create it and it will be owned by root.
+			// Test for "/" or "./something" (ignore "." and "./")
+			if strings.HasPrefix(source, "/") || (len(source) > 2 && source[0:2] == "./") {
+				prepare[path.Clean(source)] = ensureExistsOrDir
+			}
+			// If this is a volume that will be mounted beneath the current
+			// dir ensure the child dir exists.
+			if len(wdTargets) > 0 {
+				for wdTarget, wdSource := range wdTargets {
+					if strings.HasPrefix(target, wdTarget) {
+						subdir := path.Clean(strings.Replace(target, wdTarget, wdSource, 1))
+						// Assume current dir is already a dir.
+						if subdir != "." {
+							prepare[subdir] = ensureExistsOrDir
 						}
-						filevols = append(filevols, expanded)
-						delete(v, "file")
 					}
 				}
 			}
 		}
+	}); err != nil {
+		return nil, err
 	}
-	return filevols, nil
+
+	return prepare, nil
+}
+
+func endWithPathSep(s string) string {
+	return path.Clean(s) + "/"
+}
+
+func iterateBindMounts(service map[string]interface{}, f func(string, string, map[string]interface{})) error {
+	if volumes, ok := service["volumes"].([]interface{}); ok {
+		for _, volume := range volumes {
+			if v, ok := volume.(map[string]interface{}); ok {
+				if v["type"] == "bind" {
+					source, err := homedir.Expand(expand(v["source"].(string)))
+					if err != nil {
+						return err
+					}
+					f(source, v["target"].(string), v)
+				}
+			} else if v, ok := volume.(string); ok {
+				expanded, err := homedir.Expand(expand(v))
+				if err != nil {
+					return err
+				}
+				parts := strings.Split(expanded, ":")
+				source, target := parts[0], parts[1]
+				// We could fake the volume long-syntax map here but we don't currently need it.
+				f(source, target, nil)
+			}
+		}
+	}
+
+	return nil
 }
 
 var keysToOverwrite = []string{"entrypoint", "command"}

@@ -1,7 +1,9 @@
 package config
 
 import (
+	"fmt"
 	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -154,4 +156,88 @@ user:
 			"Config 'not-found' for service 'microservice' does not exist",
 			"Errors for not-found user service config choice")
 	})
+}
+
+func TestPrepareVolumes(t *testing.T) {
+	os.Unsetenv("MUSS_TEST_VAR")
+
+	t.Run("using ./", func(t *testing.T) {
+		assertPreparedVolumes(
+			t,
+			map[string]interface{}{
+				"volumes": []interface{}{
+					"named_vol:/some/vol",
+					"named_child:/usr/src/app/named_mount",
+					"/root/dir:/some/root",
+					"/root/sub:/usr/src/app/sub/root",
+					"${MUSS_TEST_VAR:-.}:/usr/src/app", // keep this in the middle (not first)
+					map[string]interface{}{
+						"type":   "volume",
+						"source": "named_map",
+						"target": "/named/map",
+					},
+					map[string]interface{}{
+						"type":   "bind",
+						"source": "/file",
+						"target": "/anywhere",
+						"file":   true,
+					},
+				},
+			},
+			map[string]func(string) error{
+				"named_mount": ensureExistsOrDir,
+				"/root/dir":   ensureExistsOrDir,
+				"/root/sub":   ensureExistsOrDir,
+				"sub/root":    ensureExistsOrDir,
+				"/file":       ensureFile,
+			},
+		)
+	})
+
+	t.Run("using children of ./", func(t *testing.T) {
+		assertPreparedVolumes(
+			t,
+			map[string]interface{}{
+				"volumes": []interface{}{
+					"${MUSS_TEST_VAR:-./foo}:/somewhere/foo",
+					"./bar/:/usr/src/app/bar",
+					"named_foo:/somewhere/foo/baz",
+					"./t/qux:/usr/src/app/bar/quxt",
+				},
+			},
+			map[string]func(string) error{
+				"foo":      ensureExistsOrDir,
+				"bar":      ensureExistsOrDir,
+				"foo/baz":  ensureExistsOrDir,
+				"t/qux":    ensureExistsOrDir,
+				"bar/quxt": ensureExistsOrDir,
+			},
+		)
+	})
+}
+
+func assertPreparedVolumes(t *testing.T, service map[string]interface{}, exp map[string]func(string) error) {
+	t.Helper()
+
+	actual, err := prepareVolumes(service)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Equality assertion doesn't work on func refs so do it another way.
+	assert.Equal(t, len(exp), len(actual))
+	for k := range exp {
+		assert.NotNilf(t, actual[k], "actual %s not nil", k)
+		assert.Equalf(t, describeFunc(exp[k]), describeFunc(actual[k]), "funcs for %s", k)
+	}
+
+	// However, this diff can be useful when debugging.
+	if t.Failed() {
+		assert.Equal(t, exp, actual)
+	}
+}
+
+// Print the function address: "(func(string) error)(0x12de840)"
+func describeFunc(v interface{}) string {
+	return fmt.Sprintf("%#v", v)
 }

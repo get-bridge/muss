@@ -13,8 +13,23 @@ func Save() {
 	generateFiles(All())
 }
 
+// Assume that if a volume is pointing to an existing file they probably meant it.
+func ensureExistsOrDir(file string) error {
+	if _, err := os.Stat(file); err != nil {
+		if os.IsNotExist(err) {
+			return ensureDir(file)
+		}
+		return err
+	}
+	return nil
+}
+
+func ensureDir(file string) error {
+	return os.MkdirAll(file, 0777)
+}
+
 func ensureFile(file string) error {
-	if err := os.MkdirAll(path.Dir(file), 0777); err != nil {
+	if err := ensureDir(path.Dir(file)); err != nil {
 		return err
 	}
 	if stat, err := os.Stat(file); err != nil {
@@ -31,12 +46,15 @@ func ensureFile(file string) error {
 		return nil
 	}
 
-	if file, err := os.Create(file); err == nil {
-		file.Close()
-	} else {
+	return touch(file)
+}
+
+func touch(file string) error {
+	f, err := os.Create(file)
+	if err != nil {
 		return err
 	}
-
+	f.Close()
 	return nil
 }
 

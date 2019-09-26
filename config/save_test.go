@@ -50,6 +50,7 @@ func TestConfigSave(t *testing.T) {
 					},
 					"volumes": []interface{}{
 						"./foo:/bar",
+						"./pre-existing.file:/some/file",
 						map[string]interface{}{
 							"type":   "bind",
 							"source": "${MUSS_TEST_VAR:-~/vol}/file",
@@ -75,6 +76,7 @@ func TestConfigSave(t *testing.T) {
 									},
 									"volumes": []interface{}{
 										"./foo:/bar",
+										"./pre-existing.file:/some/file",
 										map[string]interface{}{
 											"type":   "bind",
 											"source": "${MUSS_TEST_VAR:-~/vol}/file",
@@ -90,6 +92,11 @@ func TestConfigSave(t *testing.T) {
 			},
 		}
 		ioutil.WriteFile(ProjectFile, yamlDump(cfg), 0644)
+
+		assertNotExist(t, "./foo")
+		assertNotExist(t, "./test-home/vol/file")
+		assertNotExist(t, "./pre-existing.file")
+		touch("./pre-existing.file")
 
 		assert.Nil(t, project, "Project config not yet loaded") // prove that Save will load it.
 		Save()
@@ -118,11 +125,9 @@ func TestConfigSave(t *testing.T) {
 			assert.EqualValues(t, exp, parsed, "Generated docker-compose yaml")
 		}
 
-		if stat, err := os.Stat("./test-home/vol/file"); err != nil {
-			t.Fatalf("failed to create file for volume: %s", err)
-		} else {
-			assert.True(t, stat.Mode().IsRegular(), "plain file")
-		}
+		assert.DirExists(t, "./foo", "plain file")
+		assert.FileExists(t, "./test-home/vol/file", "plain file")
+		assert.FileExists(t, "./pre-existing.file", "still a file")
 	})
 
 	t.Run("ensureFile", func(t *testing.T) {
@@ -143,4 +148,12 @@ func TestConfigSave(t *testing.T) {
 		assert.Nil(t, again, "no error when already a file")
 		assert.FileExists(t, "foo/bar/baz")
 	})
+}
+
+func assertNotExist(t *testing.T, path string) {
+	if _, err := os.Lstat(path); err == nil {
+		t.Fatalf("expected '%s' not to exist but it does", path)
+	} else if !os.IsNotExist(err) {
+		t.Fatalf("stat error: %s", err)
+	}
 }
