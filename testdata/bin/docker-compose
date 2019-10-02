@@ -1,0 +1,7 @@
+#!/bin/sh
+
+echo std err >&2
+echo "docker-compose"
+for i in "$@"; do
+  echo "$i"
+done

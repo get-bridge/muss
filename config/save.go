@@ -59,6 +59,11 @@ func touch(file string) error {
 }
 
 func generateFiles(cfg ProjectConfig) {
+	// If there is not project config file, there is nothing to do.
+	if cfg == nil {
+		return
+	}
+
 	dc, files, err := DockerComposeFiles(cfg)
 	if err != nil {
 		log.Fatalln("Error creating docker-compose config:\n", err)

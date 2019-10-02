@@ -37,6 +37,12 @@ func TestConfigSave(t *testing.T) {
 		UserFile = ""
 	}()
 
+	t.Run("no config", func(t *testing.T) {
+		SetConfig(nil)
+		generateFiles(nil)
+		// no errors
+	})
+
 	t.Run("config save", func(t *testing.T) {
 
 		exp := map[string]interface{}{

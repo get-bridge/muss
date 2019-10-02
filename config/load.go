@@ -11,6 +11,11 @@ import (
 // SetConfig sets the global config to the provided arg
 // (used internally for testing).
 func SetConfig(cfg ProjectConfig) {
+	if cfg == nil {
+		project = nil
+		return
+	}
+
 	prepared, err := prepare(cfg)
 	if err != nil {
 		log.Fatalln("Failed to process config:", err)
@@ -19,6 +24,12 @@ func SetConfig(cfg ProjectConfig) {
 }
 
 func load() {
+	// If there is no config file do the best you can
+	// (allow muss to wrap docker-compose without a config file).
+	if _, err := os.Stat(ProjectFile); err != nil && os.IsNotExist(err) {
+		return
+	}
+
 	object, err := readYamlFile(ProjectFile)
 	if err != nil {
 		log.Fatalf("Failed to read config file '%s': %s\n", ProjectFile, err)

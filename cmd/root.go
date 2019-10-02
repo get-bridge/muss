@@ -13,7 +13,7 @@ import (
 var cfgFile string
 
 var rootCmd = &cobra.Command{
-	Use:   "help",
+	Use:   "muss",
 	Short: "Configure and run project services",
 	// Root command just shows help (which shows subcommands).
 }
