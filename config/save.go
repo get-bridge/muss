@@ -93,13 +93,19 @@ func generateFiles(cfg ProjectConfig) {
 		log.Fatalln("Failed to open file for writing:", err)
 	}
 
+	// TODO: run these concurrently and bubble errors.
 	for path, fn := range files {
 		if err := fn(path); err != nil {
 			log.Fatalln("Failed to save file:", err)
 		}
 	}
 
-	// TODO: secrets files
+	// TODO: run these concurrently and bubble errors.
+	for _, secret := range projectSecrets {
+		if err := secret.load(); err != nil {
+			log.Fatalln("Failed to get secret:", err)
+		}
+	}
 }
 
 func yamlDump(object map[string]interface{}) []byte {

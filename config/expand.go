@@ -10,6 +10,10 @@ func expand(s string) string {
 	return os.Expand(s, shellVarExpand)
 }
 
+func expandWarnOnEmpty(s string) string {
+	return os.Expand(s, shellVarExpandWarnOnEmpty)
+}
+
 func shellVarExpand(spec string) string {
 	re := regexp.MustCompile(`^([_a-zA-Z][_a-zA-Z0-9]*)(?:(:?[-?])(.*))?$`)
 	match := re.FindStringSubmatch(spec)
@@ -48,4 +52,12 @@ func shellVarExpand(spec string) string {
 	}
 
 	panic(fmt.Sprintf("Invalid interpolation format: '${%s}'", spec))
+}
+
+func shellVarExpandWarnOnEmpty(spec string) string {
+	val := shellVarExpand(spec)
+	if val == "" {
+		fmt.Fprintf(os.Stderr, "${%s} is blank\n", spec)
+	}
+	return val
 }

@@ -7,6 +7,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func assertExpandWithWarnings(t *testing.T, spec, exp, expStderr, msg string) {
+	var expanded string
+	stderr := captureStderr(t, func() {
+		expanded = expandWarnOnEmpty(spec)
+	})
+	assert.Equal(t, expStderr, stderr, "warns to stderr")
+	assert.Equal(t, exp, expanded, msg)
+}
+
 func TestShellVarExpand(t *testing.T) {
 	t.Run("unsupported syntax", func(t *testing.T) {
 		assert.PanicsWithValue(t, "Invalid interpolation format: '${MUSS_TEST_VAR:+nullorunset}'",
@@ -27,6 +36,8 @@ func TestShellVarExpand(t *testing.T) {
 			func() { expand("[${MUSS_TEST_VAR:?nullorunset}]") }, ":?")
 		assert.PanicsWithValue(t, "Variable 'MUSS_TEST_VAR' is required: unset",
 			func() { expand("[${MUSS_TEST_VAR?unset}]") }, "?")
+
+		assertExpandWithWarnings(t, "[${MUSS_TEST_VAR}]", "[]", "${MUSS_TEST_VAR} is blank\n", "expanded blank")
 	})
 
 	t.Run("var blank", func(t *testing.T) {
@@ -42,6 +53,8 @@ func TestShellVarExpand(t *testing.T) {
 		assert.PanicsWithValue(t, "Variable 'MUSS_TEST_VAR' is required: nullorunset",
 			func() { expand("[${MUSS_TEST_VAR:?nullorunset}]") }, ":?")
 		assert.Equal(t, "[]", expand("[${MUSS_TEST_VAR?unset}]"), "?")
+
+		assertExpandWithWarnings(t, "[${MUSS_TEST_VAR}]", "[]", "${MUSS_TEST_VAR} is blank\n", "expanded blank")
 	})
 
 	t.Run("var nonblank", func(t *testing.T) {
@@ -53,5 +66,7 @@ func TestShellVarExpand(t *testing.T) {
 		assert.Equal(t, "[not blank]", expand("[${MUSS_TEST_VAR-unset}]"), "-")
 		assert.Equal(t, "[not blank]", expand("[${MUSS_TEST_VAR:?nullorunset}]"), ":?")
 		assert.Equal(t, "[not blank]", expand("[${MUSS_TEST_VAR?nullorunset}]"), "?")
+
+		assertExpandWithWarnings(t, "[${MUSS_TEST_VAR}]", "[not blank]", "", "expanded non blank")
 	})
 }

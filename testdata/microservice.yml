@@ -18,10 +18,16 @@ configs:
           JUST_TO_PROVE: that no "ms" service is created
 
   remote:
+    secrets:
+      - varname: MSKEY
+        print: [some, thing]
+      - exec: [echo, what, ever]
+        varname: OTHER_SECRET_TEST
     services:
       web:
         environment:
-          MSKEY: remote
+          MSKEY: $MSKEY
+          OTHER_SECRET_TEST:
 
   registry:
     services:

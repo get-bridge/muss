@@ -4,6 +4,7 @@ services:
     image: thing
     command: [web]
     entrypoint: [/entrypoint]
+    env_file: ./env.string
     environment:
       PANDA: BEAR
       MSKEY: reg
@@ -13,6 +14,9 @@ services:
     image: thing
     command: [work]
     entrypoint: [/entrypoint]
+    env_file:
+      - ./env.list
+      - ./env.list.2
     environment:
       PANDA: BEAR
     volumes:

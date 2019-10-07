@@ -8,6 +8,13 @@ import (
 	homedir "github.com/mitchellh/go-homedir"
 )
 
+// FileGenFunc is a function that takes a string (file path)
+// and generates the file at that path (returning an error).
+type FileGenFunc func(string) error
+
+// FileGenMap is just a map of the file path to its FileGenFunc.
+type FileGenMap map[string]FileGenFunc
+
 // DockerComposeFile is the path to the docker-compose file that will be
 // generated.
 var DockerComposeFile = "docker-compose.yml"
@@ -24,16 +31,21 @@ func DockerComposeConfig(config ProjectConfig) (map[string]interface{}, error) {
 // The files value is a `map[string]func(string) error` where the key is
 // the file path and the value is a function that takes the path argument
 // and writes the file or errors.
-func DockerComposeFiles(config ProjectConfig) (map[string]interface{}, map[string]func(string) error, error) {
-	files := make(map[string]func(string) error)
+func DockerComposeFiles(config ProjectConfig) (dcc map[string]interface{}, files FileGenMap, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = r.(error)
+		}
+	}()
 
+	files = make(FileGenMap)
 	var user map[string]interface{}
 	if u, ok := config["user"].(map[string]interface{}); ok {
 		user = u
 	}
 
 	// Setup a base to merge things onto.
-	dcc := map[string]interface{}{
+	dcc = map[string]interface{}{
 		"version":  "3.7", // latest
 		"volumes":  map[string]interface{}{},
 		"services": map[string]interface{}{},
@@ -49,10 +61,43 @@ func DockerComposeFiles(config ProjectConfig) (map[string]interface{}, map[strin
 		}
 	}
 
+	secrets := make([]*secretCmd, 0)
 	for _, service := range servdefs {
 		servconf, err := serviceConfig(config, service)
 		if err != nil {
 			return nil, nil, err
+		}
+
+		secretsToParse := make([]map[string]interface{}, 0)
+		if s, ok := servconf["secrets"]; ok {
+
+			if mapsi, ok := s.(map[string]interface{}); ok {
+				for varname, spec := range mapsi {
+					if val, ok := spec.(map[string]interface{}); ok {
+						secretsToParse = append(secretsToParse, mapMerge(map[string]interface{}{"varname": varname}, val))
+					} else {
+						return nil, nil, fmt.Errorf("secret spec must be a map")
+					}
+				}
+			} else if slice, ok := s.([]interface{}); ok {
+				for _, spec := range slice {
+					if val, ok := spec.(map[string]interface{}); ok {
+						secretsToParse = append(secretsToParse, val)
+					} else {
+						return nil, nil, fmt.Errorf("secret spec must be a map")
+					}
+				}
+			}
+
+			for _, spec := range secretsToParse {
+				parsed, err := parseSecret(config, spec)
+				if err != nil {
+					return nil, nil, err
+				}
+				secrets = append(secrets, parsed)
+			}
+
+			delete(servconf, "secrets")
 		}
 
 		dcc = mapMerge(dcc, servconf)
@@ -62,6 +107,8 @@ func DockerComposeFiles(config ProjectConfig) (map[string]interface{}, map[strin
 		dcc = mapMerge(dcc, override)
 	}
 
+	// Iterate over each service to remove any muss extensions
+	// and do any necessary preparations.
 	if services, ok := (dcc["services"]).(map[string]interface{}); ok {
 		for name, si := range services {
 			if service, ok := si.(map[string]interface{}); ok {
@@ -81,6 +128,11 @@ func DockerComposeFiles(config ProjectConfig) (map[string]interface{}, map[strin
 			}
 		}
 	}
+
+	// FIXME: We're in a bad mix of "global and not"...
+	// We should either make ProjectConfig an actual type and assign this to it
+	// or quit passing configs as args and just make everything global.
+	projectSecrets = secrets
 
 	return dcc, files, nil
 }
@@ -168,8 +220,8 @@ func isValidService(service map[string]interface{}) bool {
 // docker creating a directory where we wanted a file
 // or creating a directory now owned by root when the user should own it.
 // NOTE: This currently assumes unix-like (forward slash) paths.
-func prepareVolumes(service map[string]interface{}) (map[string]func(string) error, error) {
-	prepare := make(map[string]func(string) error)
+func prepareVolumes(service map[string]interface{}) (FileGenMap, error) {
+	prepare := make(FileGenMap)
 	wdTargets := make(map[string]string)
 
 	// First try to find if we are bind-mounting the current dir (or child dirs).

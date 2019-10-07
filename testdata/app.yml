@@ -17,8 +17,10 @@ configs:
     services:
       web: &w2
         command: [web]
+        env_file: ./env.string # need not exist
       work:
         command: [work]
+        env_file: [./env.list, ./env.list.2]
 
   repo:
     include:

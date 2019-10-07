@@ -1,28 +1,31 @@
 version: '3.7'
 services:
   web:
-    image: thing
+    build: ./
     command: [web]
-    entrypoint: [/entrypoint]
+    entrypoint: [/app/entrypoint]
     env_file: ./env.string
     environment:
       PANDA: BEAR
-      MSKEY: reg
+      GIANT: bear cat
+      MSKEY: $MSKEY
+      OTHER_SECRET_TEST:
     volumes:
       - 'deps:/deps'
+      - './:/app'
   work:
-    image: thing
+    build: ./
     command: [work]
-    entrypoint: [/entrypoint]
+    entrypoint: [/app/entrypoint]
     env_file:
       - ./env.list
       - ./env.list.2
     environment:
       PANDA: BEAR
+      GIANT: bear cat
     volumes:
       - 'deps:/deps'
-  ms:
-    image: reg:2
+      - './:/app'
   store:
     build: ./store
     volumes:
@@ -35,6 +38,8 @@ services:
         target: '/var/somefile'
         read_only: true
         consistency: cached
-    command: [init]
+    command:
+      - init
 volumes:
+  deps: {}
   storedata: {}

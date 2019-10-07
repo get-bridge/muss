@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -12,14 +11,6 @@ import (
 // NOTE: For YAML:
 // - don't let any tabs get in
 // - file paths are relative to this test file's parent dir
-
-func readFile(t *testing.T, path string) string {
-	content, err := ioutil.ReadFile(path)
-	if err != nil {
-		t.Fatalf("error reading '%s': %s", path, err)
-	}
-	return string(content)
-}
 
 func parseAndCompose(config string) (parsed ProjectConfig, err error) {
 	parsed, err = parseYaml([]byte(config))
@@ -46,6 +37,8 @@ func assertConfigError(t *testing.T, config, expErr string, msgAndArgs ...interf
 }
 
 func assertComposed(t *testing.T, config, exp string, msgAndArgs ...interface{}) {
+	t.Helper()
+
 	var parsedExp, dc map[string]interface{}
 	var err error
 
@@ -88,8 +81,8 @@ user: {service_preference: [repo, registry]}
 user: {service_preference: [registry, repo]}
 `
 
-	expRepo := readFile(t, "../testdata/expectations/repo.yml")
-	expRegistry := readFile(t, "../testdata/expectations/registry.yml")
+	expRepo := readTestFile(t, "../testdata/expectations/repo.yml")
+	expRegistry := readTestFile(t, "../testdata/expectations/registry.yml")
 
 	t.Run("repo preference", func(t *testing.T) {
 		config := preferRepo + serviceFiles
@@ -110,7 +103,7 @@ user: {service_preference: [registry, repo]}
 user_file: ../testdata/user-registry-ms-repo.yml
 `
 
-		exp := readFile(t, "../testdata/expectations/user-registry-ms-repo.yml")
+		exp := readTestFile(t, "../testdata/expectations/user-registry-ms-repo.yml")
 
 		assertComposed(t, config, exp, "user preference overrides orders")
 	})
@@ -129,7 +122,7 @@ user:
         volumes: [overdeps:/var/deps]
 `
 
-		exp := readFile(t, "../testdata/expectations/registry-user-override.yml")
+		exp := readTestFile(t, "../testdata/expectations/registry-user-override.yml")
 
 		assertComposed(t, config, exp, "user preference overrides orders")
 	})
@@ -155,6 +148,65 @@ user:
 `,
 			"Config 'not-found' for service 'microservice' does not exist",
 			"Errors for not-found user service config choice")
+	})
+
+	t.Run("secrets", func(t *testing.T) {
+		// We don't actually create this we just want a string.
+		setCacheRoot("/tmp/.muss-test-cache")
+
+		projectSecrets = nil
+
+		os.Setenv("MUSS_TEST_PASSPHRASE", "decomposing")
+		config := preferRegistry + serviceFiles + `
+secrets:
+  passphrase: $MUSS_TEST_PASSPHRASE
+  commands:
+    print:
+      exec: [echo]
+user:
+  service_preference: [repo]
+  services:
+    microservice:
+      config: remote
+`
+
+		exp := readTestFile(t, "../testdata/expectations/user-registry-ms-remote.yml")
+
+		assertComposed(t, config, exp, "service defs with secrets")
+
+		if len(projectSecrets) != 2 {
+			t.Fatalf("expected 2 secrets, found %d", len(projectSecrets))
+		}
+		assert.Equal(t, "MSKEY", projectSecrets[0].varname)
+		assert.Equal(t, "OTHER_SECRET_TEST", projectSecrets[1].varname)
+
+		assertComposed(t,
+			`
+secrets:
+  passphrase: $MUSS_TEST_PASSPHRASE
+service_definitions:
+- name: one
+  configs:
+    sole:
+      secrets:
+        - varname: FOO_SECRET
+          exec: [echo, foo]
+- name: two
+  configs:
+    sole:
+      secrets:
+        BAR_SHH:
+          exec: [echo, bar]
+`,
+			`{services: {}, volumes: {}, version: '3.7'}`,
+			"secrets as map or list",
+		)
+
+		if len(projectSecrets) != 2 {
+			t.Fatalf("expected 2 secrets, found %d", len(projectSecrets))
+		}
+		assert.Equal(t, "FOO_SECRET", projectSecrets[0].varname)
+		assert.Equal(t, "BAR_SHH", projectSecrets[1].varname)
 	})
 }
 
@@ -184,7 +236,7 @@ func TestPrepareVolumes(t *testing.T) {
 					},
 				},
 			},
-			map[string]func(string) error{
+			FileGenMap{
 				"named_mount": ensureExistsOrDir,
 				"/root/dir":   ensureExistsOrDir,
 				"/root/sub":   ensureExistsOrDir,
@@ -205,7 +257,7 @@ func TestPrepareVolumes(t *testing.T) {
 					"./t/qux:/usr/src/app/bar/quxt",
 				},
 			},
-			map[string]func(string) error{
+			FileGenMap{
 				"foo":      ensureExistsOrDir,
 				"bar":      ensureExistsOrDir,
 				"foo/baz":  ensureExistsOrDir,
@@ -216,7 +268,7 @@ func TestPrepareVolumes(t *testing.T) {
 	})
 }
 
-func assertPreparedVolumes(t *testing.T, service map[string]interface{}, exp map[string]func(string) error) {
+func assertPreparedVolumes(t *testing.T, service map[string]interface{}, exp FileGenMap) {
 	t.Helper()
 
 	actual, err := prepareVolumes(service)

@@ -131,8 +131,17 @@ func stringifyKeys(m map[interface{}]interface{}) map[string]interface{} {
 	return result
 }
 
+func subMap(cfg ProjectConfig, key string) map[string]interface{} {
+	if val, ok := cfg[key].(map[string]interface{}); ok {
+		return val
+	}
+	return map[string]interface{}{}
+}
+
 func stringSlice(obj interface{}) ([]string, bool) {
-	if slice, ok := obj.([]interface{}); ok {
+	if slice, ok := obj.([]string); ok {
+		return slice, true
+	} else if slice, ok := obj.([]interface{}); ok {
 		strings := make([]string, len(slice))
 		for i, item := range slice {
 			strings[i] = item.(string)

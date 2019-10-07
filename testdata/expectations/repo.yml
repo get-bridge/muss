@@ -4,6 +4,7 @@ services:
     build: ./
     command: [web]
     entrypoint: [/app/entrypoint]
+    env_file: ./env.string
     environment:
       PANDA: BEAR
       GIANT: bear cat
@@ -15,6 +16,9 @@ services:
     build: ./
     command: [work]
     entrypoint: [/app/entrypoint]
+    env_file:
+      - ./env.list
+      - ./env.list.2
     environment:
       PANDA: BEAR
       GIANT: bear cat
