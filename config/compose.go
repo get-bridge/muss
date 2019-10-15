@@ -61,7 +61,7 @@ func DockerComposeFiles(config ProjectConfig) (dcc map[string]interface{}, files
 		}
 	}
 
-	secrets := make([]*secretCmd, 0)
+	secrets := make([]envLoader, 0)
 	for _, service := range servdefs {
 		servconf, err := serviceConfig(config, service)
 		if err != nil {

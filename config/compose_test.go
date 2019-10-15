@@ -177,8 +177,8 @@ user:
 		if len(projectSecrets) != 2 {
 			t.Fatalf("expected 2 secrets, found %d", len(projectSecrets))
 		}
-		assert.Equal(t, "MSKEY", projectSecrets[0].varname)
-		assert.Equal(t, "OTHER_SECRET_TEST", projectSecrets[1].varname)
+		assert.Equal(t, "MSKEY", projectSecrets[0].VarName())
+		assert.Equal(t, "OTHER_SECRET_TEST", projectSecrets[1].VarName())
 
 		assertComposed(t,
 			`
@@ -205,8 +205,8 @@ service_definitions:
 		if len(projectSecrets) != 2 {
 			t.Fatalf("expected 2 secrets, found %d", len(projectSecrets))
 		}
-		assert.Equal(t, "FOO_SECRET", projectSecrets[0].varname)
-		assert.Equal(t, "BAR_SHH", projectSecrets[1].varname)
+		assert.Equal(t, "FOO_SECRET", projectSecrets[0].VarName())
+		assert.Equal(t, "BAR_SHH", projectSecrets[1].VarName())
 	})
 }
 

@@ -1,7 +1,6 @@
 package config
 
 import (
-	"bytes"
 	"crypto/rand"
 	"crypto/sha1"
 	"crypto/sha512"
@@ -9,8 +8,8 @@ import (
 	"io/ioutil"
 	"math/big"
 	"os"
-	"os/exec"
 	"path"
+	"sync"
 
 	"golang.org/x/crypto/nacl/secretbox"
 	"golang.org/x/crypto/pbkdf2"
@@ -20,12 +19,12 @@ var envFileDir string
 var secretDir string
 
 type secretCmd struct {
-	varname    string
-	exec       []string
+	name string
+	*envCmd
 	passphrase string
 }
 
-var projectSecrets []*secretCmd
+var projectSecrets []envLoader
 
 func init() {
 	findCacheRoot()
@@ -49,8 +48,16 @@ func setCacheRoot(dir string) {
 	secretDir = path.Join(dir, ".muss", genFileName(path.Clean(wd)), "secrets")
 }
 
-func parseSecret(cfg ProjectConfig, spec map[string]interface{}) (result *secretCmd, err error) {
-	var cmd string
+type secretSetup struct {
+	done    bool
+	mutex   sync.Mutex
+	envCmds []envLoader
+}
+
+var secretEnvCommands map[string]*secretSetup
+
+func parseSecret(cfg ProjectConfig, spec map[string]interface{}) (*secretCmd, error) {
+	var name string
 	var args []string
 	var varname string
 
@@ -59,94 +66,121 @@ func parseSecret(cfg ProjectConfig, spec map[string]interface{}) (result *secret
 		case "varname":
 			varname = v.(string)
 		default:
-			if cmd != "" {
-				err = fmt.Errorf("secret cannot have multiple commands: %q and %q", cmd, k)
-				return
+			if name != "" {
+				return nil, fmt.Errorf("secret cannot have multiple commands: %q and %q", name, k)
 			}
-			cmd = k
+			name = k
 			var ok bool
 			args, ok = stringSlice(v)
 			if !ok {
-				err = fmt.Errorf("value for secret args must be a list")
-				return
+				return nil, fmt.Errorf("value for secret args must be a list")
 			}
 		}
 	}
 
+	secretEnvCommands = make(map[string]*secretSetup)
+
 	secretConfig := subMap(cfg, "secrets")
-	cmdargs, cErr := newSecretCommand(secretConfig, cmd, args)
-	if cErr != nil {
-		err = cErr
-		return
+	cmdargs := make([]string, 0)
+
+	// Static command that just runs its args.
+	if name == "exec" {
+		cmdargs = args
+	} else {
+		// See if the project configures an alias to simplify service defs.
+		if commands, ok := secretConfig["commands"].(map[string]interface{}); ok {
+			if command, ok := commands[name].(map[string]interface{}); ok {
+
+				if preArgs, ok := stringSlice(command["exec"]); ok {
+					cmdargs = append(preArgs, args...)
+				}
+
+				ecs, envErr := parseEnvCommands(command["env_commands"])
+				if envErr != nil {
+					return nil, envErr
+				}
+				secretEnvCommands[name] = &secretSetup{envCmds: ecs}
+			}
+		}
+	}
+
+	if len(cmdargs) == 0 {
+		return nil, fmt.Errorf("failed to prepare secret command '%s'", name)
 	}
 
 	passphrase, _ := secretConfig["passphrase"].(string)
-	var expandedPassphrase string
-	if passphrase != "" {
-		expandedPassphrase = expandWarnOnEmpty(passphrase)
-		if passphrase == expandedPassphrase {
-			err = fmt.Errorf("passphrase should contain a variable so it isn't plain text")
-			return
-		}
-	}
-	if expandedPassphrase == "" {
-		err = fmt.Errorf("a passphrase is required to use secrets")
-		return
-	}
 
 	return &secretCmd{
-		varname:    varname,
-		exec:       cmdargs,
-		passphrase: expandedPassphrase,
+		name: name,
+		envCmd: &envCmd{
+			varname: varname,
+			exec:    cmdargs,
+		},
+		passphrase: passphrase,
 	}, nil
 }
 
-func (s *secretCmd) get() (string, error) {
+func (s *secretCmd) Passphrase() ([]byte, error) {
+	var expandedPassphrase string
+	if s.passphrase != "" {
+		expandedPassphrase = expandWarnOnEmpty(s.passphrase)
+		if s.passphrase == expandedPassphrase {
+			return nil, fmt.Errorf("passphrase should contain a variable so it isn't plain text")
+		}
+	}
+	if expandedPassphrase == "" {
+		return nil, fmt.Errorf("a passphrase is required to use secrets")
+	}
+	return []byte(expandedPassphrase), nil
+}
+
+func (s *secretCmd) Value() ([]byte, error) {
+	runSecretSetup(s.name)
+
+	passphrase, err := s.Passphrase()
+	if err != nil {
+		return nil, err
+	}
+
 	var content []byte
 
 	// See if we already have the secret cached.
 	cacheFile := path.Join(secretDir, genFileName(s.exec))
 	if fileContent, err := ioutil.ReadFile(cacheFile); err == nil {
-		content = s.decrypt(fileContent)
+		content = s.decrypt(passphrase, fileContent)
 	}
 
 	// If we don't have a cached value, run the command.
 	if len(content) == 0 {
-		var stdout, stderr bytes.Buffer
-		cmd := exec.Command(s.exec[0], s.exec[1:]...)
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = &stdout
-		cmd.Stderr = &stderr
-		if err := cmd.Run(); err != nil {
-			return "", fmt.Errorf("failed to get secret: %s", stderr.String())
+		var err error
+		content, err = s.envCmd.Value()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get secret: %s", err)
 		}
-		content = bytes.TrimRight(stdout.Bytes(), "\n")
 
 		// Cache it for next time.
-		encrypted := s.encrypt(content)
+		encrypted := s.encrypt(passphrase, content)
 		if len(encrypted) > 0 {
 			writePrivateFile(cacheFile, encrypted)
 		}
 	}
 
-	return string(content), nil
+	return content, nil
 }
 
-func (s *secretCmd) load() error {
-	// For a single value...
-	if s.varname != "" {
-		// Only get it if not already set.
-		if _, ok := os.LookupEnv(s.varname); !ok {
-			val, err := s.get()
-			if err != nil {
-				return err
-			}
-			os.Setenv(s.varname, val)
-		}
-	} else {
-		return fmt.Errorf("non-varname secrets not implemented yet")
+func runSecretSetup(name string) {
+	s := secretEnvCommands[name]
+	if s == nil {
+		return
 	}
-	return nil
+
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	if !s.done {
+		loadEnvFromCmds(s.envCmds...)
+		s.done = true
+	}
 }
 
 const (
@@ -163,7 +197,7 @@ const (
 	secretPrefixLen     = secretKeyEnd
 )
 
-func (s *secretCmd) encrypt(content []byte) []byte {
+func (s *secretCmd) encrypt(passphrase, content []byte) []byte {
 	nonce := [secretNonceLen]byte{}
 	if _, err := rand.Read(nonce[:]); err != nil {
 		return nil
@@ -189,7 +223,7 @@ func (s *secretCmd) encrypt(content []byte) []byte {
 	}
 
 	key := [secretKeyLen]byte{}
-	derivedKey := pbkdf2.Key([]byte(s.passphrase), salt[:], iterations, secretKeyLen, sha512.New)
+	derivedKey := pbkdf2.Key(passphrase, salt[:], iterations, secretKeyLen, sha512.New)
 	copy(key[:], derivedKey[:])
 
 	sealed := secretbox.Seal(nil, content, &nonce, &key)
@@ -204,7 +238,7 @@ func (s *secretCmd) encrypt(content []byte) []byte {
 	return result
 }
 
-func (s *secretCmd) decrypt(content []byte) (result []byte) {
+func (s *secretCmd) decrypt(passphrase, content []byte) (result []byte) {
 	// Don't error on slice indexing.
 	if len(content) <= secretPrefixLen {
 		return nil
@@ -219,7 +253,7 @@ func (s *secretCmd) decrypt(content []byte) (result []byte) {
 	copy(salt[:], content[secretSaltStart:secretSaltEnd])
 
 	key := [secretKeyLen]byte{}
-	derivedKey := pbkdf2.Key([]byte(s.passphrase), salt[:], iterations, secretKeyLen, sha512.New)
+	derivedKey := pbkdf2.Key(passphrase, salt[:], iterations, secretKeyLen, sha512.New)
 	copy(key[:], derivedKey[:])
 
 	plain, ok := secretbox.Open(nil, content[secretPrefixLen:], &nonce, &key)
@@ -227,30 +261,6 @@ func (s *secretCmd) decrypt(content []byte) (result []byte) {
 		return nil
 	}
 	return plain
-}
-
-func newSecretCommand(secretConfig map[string]interface{}, name string, args []string) ([]string, error) {
-	cmdargs := make([]string, 0)
-
-	// Static command that just runs its args.
-	if name == "exec" {
-		cmdargs = args
-	} else {
-		// See if the project configures an alias to simplify service defs.
-		if commands, ok := secretConfig["commands"].(map[string]interface{}); ok {
-			if command, ok := commands[name].(map[string]interface{}); ok {
-				if preArgs, ok := stringSlice(command["exec"]); ok {
-					cmdargs = append(preArgs, args...)
-				}
-			}
-		}
-	}
-
-	if len(cmdargs) == 0 {
-		return nil, fmt.Errorf("failed to prepare secret command '%s'", name)
-	}
-
-	return cmdargs, nil
 }
 
 func genFileName(args ...interface{}) string {

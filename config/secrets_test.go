@@ -20,7 +20,7 @@ func TestSecretCommands(t *testing.T) {
 	withTempDir(t, func(tmpdir string) {
 		findCacheRoot()
 
-		os.Setenv("MUSS_TEST_PASSPHRASE", "go test!")
+		os.Unsetenv("MUSS_TEST_PASSPHRASE")
 
 		cfg := map[string]interface{}{
 			"secrets": map[string]interface{}{
@@ -28,6 +28,12 @@ func TestSecretCommands(t *testing.T) {
 				"commands": map[string]interface{}{
 					"some": map[string]interface{}{
 						"exec": []string{secretCmdPath, "something"},
+						"env_commands": []interface{}{
+							map[string]interface{}{
+								"exec":    []string{secretCmdPath, "pre-cmd"},
+								"varname": "MUSS_TEST_PASSPHRASE",
+							},
+						},
 					},
 				},
 			},
@@ -65,32 +71,32 @@ func TestSecretCommands(t *testing.T) {
 		testLoadSecret(t, secret)
 		assert.Equal(t, expSecret, os.Getenv(varname), "sets env var")
 		assert.FileExists(t, secretCacheFile)
-		assert.Equal(t, "shhh\n", readTestFile(t, secretLog), "secret called once")
+		assert.Equal(t, "shhh p\nshhh s\n", readTestFile(t, secretLog), "pre-cmd and secret each called once")
 
 		os.Setenv(logvarname, "again")
 
 		os.Unsetenv(varname)
 		testLoadSecret(t, secret)
 		assert.Equal(t, expSecret, os.Getenv(varname), "sets env var")
-		assert.Equal(t, "shhh\n", readTestFile(t, secretLog), "secret not called again (cached)")
+		assert.Equal(t, "shhh p\nshhh s\n", readTestFile(t, secretLog), "neither called again (cached)")
 
-		secret.passphrase = "invalidate!"
-
-		os.Unsetenv(varname)
-		testLoadSecret(t, secret)
-		assert.Equal(t, expSecret, os.Getenv(varname), "sets env var")
-		assert.Equal(t, "shhh\nagain\n", readTestFile(t, secretLog), "secret called again (invalid cache)")
+		os.Setenv("MUSS_TEST_PASSPHRASE", "invalidate!")
 
 		os.Unsetenv(varname)
 		testLoadSecret(t, secret)
 		assert.Equal(t, expSecret, os.Getenv(varname), "sets env var")
-		assert.Equal(t, "shhh\nagain\n", readTestFile(t, secretLog), "secret cached")
+		assert.Equal(t, "shhh p\nshhh s\nagain s\n", readTestFile(t, secretLog), "secret called again (invalid cache)")
+
+		os.Unsetenv(varname)
+		testLoadSecret(t, secret)
+		assert.Equal(t, expSecret, os.Getenv(varname), "sets env var")
+		assert.Equal(t, "shhh p\nshhh s\nagain s\n", readTestFile(t, secretLog), "secret cached")
 
 		appendToTestFile(t, secretCacheFile, "x")
 		os.Unsetenv(varname)
 		testLoadSecret(t, secret)
 		assert.Equal(t, expSecret, os.Getenv(varname), "sets env var")
-		assert.Equal(t, "shhh\nagain\nagain\n", readTestFile(t, secretLog), "cache corrupted")
+		assert.Equal(t, "shhh p\nshhh s\nagain s\nagain s\n", readTestFile(t, secretLog), "cache corrupted")
 
 		os.Setenv(logvarname, "still")
 
@@ -98,16 +104,19 @@ func TestSecretCommands(t *testing.T) {
 		os.Unsetenv(varname)
 		testLoadSecret(t, secret)
 		assert.Equal(t, expSecret, os.Getenv(varname), "sets env var")
-		assert.Equal(t, "shhh\nagain\nagain\nstill\n", readTestFile(t, secretLog), "cache corrupted")
+		assert.Equal(t, "shhh p\nshhh s\nagain s\nagain s\nstill s\n", readTestFile(t, secretLog), "cache corrupted")
 
 		os.Unsetenv(varname)
 		testLoadSecret(t, secret)
 		assert.Equal(t, expSecret, os.Getenv(varname), "sets env var")
-		assert.Equal(t, "shhh\nagain\nagain\nstill\n", readTestFile(t, secretLog), "cached again")
+		assert.Equal(t, "shhh p\nshhh s\nagain s\nagain s\nstill s\n", readTestFile(t, secretLog), "cached again")
 	})
 
 	t.Run("errors", func(t *testing.T) {
 		os.Unsetenv("MUSS_TEST_PASSPHRASE")
+
+		varname := "MUSS_TEST_SECRET_VAR"
+		os.Unsetenv(varname)
 
 		cfg := map[string]interface{}{
 			"secrets": map[string]interface{}{
@@ -118,8 +127,6 @@ func TestSecretCommands(t *testing.T) {
 				},
 			},
 		}
-
-		varname := "MUSS_TEST_SECRET_VAR"
 
 		secretSpec := map[string]interface{}{
 			"some":    "string",
@@ -159,7 +166,11 @@ func TestSecretCommands(t *testing.T) {
 
 func testSecretError(t *testing.T, cfg ProjectConfig, spec map[string]interface{}) string {
 	t.Helper()
-	_, err := parseSecret(cfg, spec)
+	s, err := parseSecret(cfg, spec)
+	// Some errors don't occur until trying to load it.
+	if err == nil {
+		err = loadEnvFromCmds(s)
+	}
 	if err == nil {
 		t.Fatal("expected err, got nil")
 	}
@@ -168,7 +179,7 @@ func testSecretError(t *testing.T, cfg ProjectConfig, spec map[string]interface{
 
 func testLoadSecret(t *testing.T, secret *secretCmd) {
 	t.Helper()
-	if err := secret.load(); err != nil {
+	if err := loadEnvFromCmds(secret); err != nil {
 		t.Fatalf("failed to load secret: %s", err)
 	}
 }

@@ -100,11 +100,8 @@ func generateFiles(cfg ProjectConfig) {
 		}
 	}
 
-	// TODO: run these concurrently and bubble errors.
-	for _, secret := range projectSecrets {
-		if err := secret.load(); err != nil {
-			log.Fatalln("Failed to get secret:", err)
-		}
+	if err := loadEnvFromCmds(projectSecrets...); err != nil {
+		log.Fatalln("Failed to load secrets:", err)
 	}
 }
 
