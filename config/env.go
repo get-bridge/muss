@@ -8,13 +8,15 @@ import (
 )
 
 type envCmd struct {
-	varname string
+	parse   bool
 	exec    []string
+	varname string
 }
 
 type envLoader interface {
-	VarName() string
+	ShouldParse() bool
 	Value() ([]byte, error)
+	VarName() string
 }
 
 // parseEnvCommands takes an item (interface{}) from a config
@@ -47,12 +49,15 @@ func parseEnvCommand(spec interface{}) (*envCmd, error) {
 		return nil, fmt.Errorf("expected env_command to be a map not %t", spec)
 	}
 
+	parse := false
 	varname := ""
 	args := []string{}
 	for k, v := range msi {
 		switch k {
 		case "varname":
 			varname = v.(string)
+		case "parse":
+			parse = v.(bool)
 		case "exec":
 			var ok bool
 			args, ok = stringSlice(v)
@@ -65,9 +70,14 @@ func parseEnvCommand(spec interface{}) (*envCmd, error) {
 	}
 
 	return &envCmd{
-		varname: varname,
 		exec:    args,
+		parse:   parse,
+		varname: varname,
 	}, nil
+}
+
+func (e *envCmd) ShouldParse() bool {
+	return e.parse
 }
 
 // Value will run the command and return the output.
@@ -94,9 +104,12 @@ func (e *envCmd) VarName() string {
 func loadEnvFromCmds(envCmds ...envLoader) error {
 	// TODO: load these concurrently
 	for _, e := range envCmds {
-		varname := e.VarName()
 		// For a single value...
-		if varname != "" {
+		if !e.ShouldParse() {
+			varname := e.VarName()
+			if varname == "" {
+				return fmt.Errorf(`env command must have either "parse: true" or a "varname"`)
+			}
 			// Only get it if not already set.
 			if _, ok := os.LookupEnv(varname); !ok {
 				val, err := e.Value()
@@ -106,7 +119,41 @@ func loadEnvFromCmds(envCmds ...envLoader) error {
 				return os.Setenv(varname, string(val))
 			}
 		} else {
-			return fmt.Errorf("non-varname commands not implemented yet")
+			if e.VarName() != "" {
+				return fmt.Errorf(`use "parse: true" or "varname", not both`)
+			}
+			// If we don't know what env vars it will load
+			// we have to call it.
+			val, err := e.Value()
+			if err != nil {
+				return err
+			}
+			return loadEnvFromBytes(val)
+		}
+	}
+
+	return nil
+}
+
+func loadEnvFromBytes(env []byte) error {
+	lines := bytes.Split(env, []byte("\n"))
+
+	for _, line := range lines {
+		if len(line) == 0 {
+			continue
+		}
+
+		parts := bytes.SplitN(line, []byte("="), 2)
+		if len(parts) != 2 {
+			return fmt.Errorf("failed to parse name=value line: %s", line)
+		}
+
+		name := string(parts[0])
+		if _, ok := os.LookupEnv(name); !ok {
+			err := os.Setenv(name, string(parts[1]))
+			if err != nil {
+				return err
+			}
 		}
 	}
 

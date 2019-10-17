@@ -110,6 +110,61 @@ func TestSecretCommands(t *testing.T) {
 		testLoadSecret(t, secret)
 		assert.Equal(t, expSecret, os.Getenv(varname), "sets env var")
 		assert.Equal(t, "shhh p\nshhh s\nagain s\nagain s\nstill s\n", readTestFile(t, secretLog), "cached again")
+
+		t.Run("multiple vars in one command", func(t *testing.T) {
+			os.Setenv("MUSS_TEST_PASSPHRASE", "howdy")
+
+			os.Unsetenv("MUSS_TEST_LINE_1_SETUP")
+			os.Unsetenv("MUSS_TEST_LINE_2_SETUP")
+			os.Unsetenv("MUSS_TEST_LINE_1_SECRET")
+			os.Unsetenv("MUSS_TEST_LINE_2_SECRET")
+
+			cfg := map[string]interface{}{
+				"secrets": map[string]interface{}{
+					"passphrase": "$MUSS_TEST_PASSPHRASE",
+					"commands": map[string]interface{}{
+						"some": map[string]interface{}{
+							"exec": []string{secretCmdPath, "--multi"},
+							"env_commands": []interface{}{
+								map[string]interface{}{
+									"exec":  []string{secretCmdPath, "--multi", "SETUP"},
+									"parse": true,
+								},
+							},
+						},
+					},
+				},
+			}
+
+			secretSpec := map[string]interface{}{
+				"some":  []string{"SECRET"},
+				"parse": true,
+			}
+
+			secret, err := parseSecret(cfg, secretSpec)
+			if err != nil {
+				t.Fatalf("error preparing secret env file: %s", err)
+			}
+
+			secretLog := "secret-log.txt"
+
+			os.Remove(secretLog)
+			assertNotExist(t, secretLog)
+
+			testLoadSecret(t, secret)
+
+			assert.Equal(t, "foo bar baz", os.Getenv("MUSS_TEST_LINE_1_SETUP"), "set first env var")
+			assert.Equal(t, "something", os.Getenv("MUSS_TEST_LINE_2_SETUP"), "set second env var")
+			assert.Equal(t, "foo bar baz", os.Getenv("MUSS_TEST_LINE_1_SECRET"), "set first env var")
+			assert.Equal(t, "something", os.Getenv("MUSS_TEST_LINE_2_SECRET"), "set second env var")
+
+			assert.Equal(t, "multi SETUP\nmulti SECRET\n", readTestFile(t, secretLog), "run once")
+
+			testLoadSecret(t, secret)
+
+			// setup only gets called once and the secret gets cached.
+			assert.Equal(t, "multi SETUP\nmulti SECRET\n", readTestFile(t, secretLog), "neither runs again")
+		})
 	})
 
 	t.Run("errors", func(t *testing.T) {
@@ -160,6 +215,27 @@ func TestSecretCommands(t *testing.T) {
 
 		assert.Regexp(t,
 			`secret cannot have multiple commands: ("some" and "exec"|"exec" and "some")`,
+			testSecretError(t, cfg, secretSpec))
+
+		subMap(subMap(subMap(cfg, "secrets"), "commands"), "some")["exec"] = []string{secretCmdPath, "--no-var"}
+
+		secretSpec = map[string]interface{}{
+			"some": []string{},
+		}
+		assert.Equal(t,
+			`env command must have either "parse: true" or a "varname"`,
+			testSecretError(t, cfg, secretSpec))
+
+		secretSpec["parse"] = true
+
+		assert.Equal(t,
+			`failed to parse name=value line: NO_EQUAL_SIGN`,
+			testSecretError(t, cfg, secretSpec))
+
+		secretSpec["varname"] = "foo"
+
+		assert.Equal(t,
+			`use "parse: true" or "varname", not both`,
 			testSecretError(t, cfg, secretSpec))
 	})
 }

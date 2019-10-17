@@ -54,17 +54,20 @@ type secretSetup struct {
 	envCmds []envLoader
 }
 
-var secretEnvCommands map[string]*secretSetup
+var secretEnvCommands = make(map[string]*secretSetup)
 
 func parseSecret(cfg ProjectConfig, spec map[string]interface{}) (*secretCmd, error) {
 	var name string
 	var args []string
 	var varname string
+	var parse bool
 
 	for k, v := range spec {
 		switch k {
 		case "varname":
 			varname = v.(string)
+		case "parse":
+			parse = v.(bool)
 		default:
 			if name != "" {
 				return nil, fmt.Errorf("secret cannot have multiple commands: %q and %q", name, k)
@@ -77,8 +80,6 @@ func parseSecret(cfg ProjectConfig, spec map[string]interface{}) (*secretCmd, er
 			}
 		}
 	}
-
-	secretEnvCommands = make(map[string]*secretSetup)
 
 	secretConfig := subMap(cfg, "secrets")
 	cmdargs := make([]string, 0)
@@ -113,8 +114,9 @@ func parseSecret(cfg ProjectConfig, spec map[string]interface{}) (*secretCmd, er
 	return &secretCmd{
 		name: name,
 		envCmd: &envCmd{
-			varname: varname,
 			exec:    cmdargs,
+			parse:   parse,
+			varname: varname,
 		},
 		passphrase: passphrase,
 	}, nil
@@ -135,7 +137,9 @@ func (s *secretCmd) Passphrase() ([]byte, error) {
 }
 
 func (s *secretCmd) Value() ([]byte, error) {
-	runSecretSetup(s.name)
+	if err := runSecretSetup(s.name); err != nil {
+		return nil, err
+	}
 
 	passphrase, err := s.Passphrase()
 	if err != nil {
@@ -168,19 +172,23 @@ func (s *secretCmd) Value() ([]byte, error) {
 	return content, nil
 }
 
-func runSecretSetup(name string) {
+func runSecretSetup(name string) error {
 	s := secretEnvCommands[name]
 	if s == nil {
-		return
+		return nil
 	}
 
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
 	if !s.done {
-		loadEnvFromCmds(s.envCmds...)
+		if err := loadEnvFromCmds(s.envCmds...); err != nil {
+			return err
+		}
 		s.done = true
 	}
+
+	return nil
 }
 
 const (
