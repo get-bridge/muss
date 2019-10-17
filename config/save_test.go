@@ -37,6 +37,8 @@ func TestConfigSave(t *testing.T) {
 							"FOO": "bar",
 						},
 						"volumes": []interface{}{
+							// Test that we ignore permission errors.
+							"/muss-test-dir:/muss-test-dir",
 							"./foo:/bar",
 							"./pre-existing.file:/some/file",
 							map[string]interface{}{
@@ -64,6 +66,7 @@ func TestConfigSave(t *testing.T) {
 											"FOO": "bar",
 										},
 										"volumes": []interface{}{
+											"/muss-test-dir:/muss-test-dir",
 											"./foo:/bar",
 											"./pre-existing.file:/some/file",
 											map[string]interface{}{

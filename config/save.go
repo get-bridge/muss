@@ -16,11 +16,22 @@ func Save() {
 // Assume that if a volume is pointing to an existing file they probably meant it.
 func ensureExistsOrDir(file string) error {
 	if _, err := os.Stat(file); err != nil {
-		if os.IsNotExist(err) {
-			return ensureDir(file)
+
+		// If there was an error other not non-existence, return it.
+		if !os.IsNotExist(err) {
+			return err
 		}
-		return err
+
+		if err := ensureDir(file); err != nil {
+			// If we failed to make the directory because of a permission error
+			// we do nothing and let docker deal with it.
+			// This allows, e.g., "/dev/shm:/dev/shm" to work in Docker For Mac.
+			if !os.IsPermission(err) {
+				return err
+			}
+		}
 	}
+
 	return nil
 }
 
