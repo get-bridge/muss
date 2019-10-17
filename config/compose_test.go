@@ -195,16 +195,21 @@ service_definitions:
       secrets:
         BAR_SHH:
           exec: [echo, bar]
+        SECOND_BAR:
+          exec: [echo, two]
 `,
 			`{services: {}, volumes: {}, version: '3.7'}`,
 			"secrets as map or list",
 		)
 
-		if len(projectSecrets) != 2 {
-			t.Fatalf("expected 2 secrets, found %d", len(projectSecrets))
+		actualVarNames := make([]string, len(projectSecrets))
+		for i := range projectSecrets {
+			actualVarNames[i] = projectSecrets[i].VarName()
 		}
-		assert.Equal(t, "FOO_SECRET", projectSecrets[0].VarName())
-		assert.Equal(t, "BAR_SHH", projectSecrets[1].VarName())
+
+		assert.ElementsMatch(t,
+			[]string{"FOO_SECRET", "BAR_SHH", "SECOND_BAR"},
+			actualVarNames)
 	})
 }
 

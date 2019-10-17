@@ -116,7 +116,9 @@ func loadEnvFromCmds(envCmds ...envLoader) error {
 				if err != nil {
 					return err
 				}
-				return os.Setenv(varname, string(val))
+				if err := os.Setenv(varname, string(val)); err != nil {
+					return err
+				}
 			}
 		} else {
 			if e.VarName() != "" {

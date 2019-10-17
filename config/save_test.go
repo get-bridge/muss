@@ -16,6 +16,7 @@ func TestConfigSave(t *testing.T) {
 		}()
 		os.Unsetenv("MUSS_TEST_VAR")
 		os.Unsetenv("MUSS_SECRET_TEST")
+		os.Unsetenv("MUSS_SECRET_TEST_TWO")
 		os.Setenv("MUSS_TEST_PASSPHRASE", "phrasey")
 
 		t.Run("no config", func(t *testing.T) {
@@ -78,6 +79,9 @@ func TestConfigSave(t *testing.T) {
 									"MUSS_SECRET_TEST": map[string]interface{}{
 										"exec": []string{"echo", "hello"},
 									},
+									"MUSS_SECRET_TEST_TWO": map[string]interface{}{
+										"exec": []string{"echo", "goodbye"},
+									},
 								},
 							},
 						},
@@ -123,6 +127,7 @@ func TestConfigSave(t *testing.T) {
 			assert.FileExists(t, "./pre-existing.file", "still a file")
 
 			assert.Equal(t, "hello", os.Getenv("MUSS_SECRET_TEST"), "loaded secret")
+			assert.Equal(t, "goodbye", os.Getenv("MUSS_SECRET_TEST_TWO"), "loaded second secret")
 		})
 
 		t.Run("ensureFile", func(t *testing.T) {
