@@ -81,7 +81,6 @@ func parseSecret(cfg ProjectConfig, spec map[string]interface{}) (*secretCmd, er
 		}
 	}
 
-	secretConfig := subMap(cfg, "secrets")
 	cmdargs := make([]string, 0)
 
 	// Static command that just runs its args.
@@ -89,7 +88,7 @@ func parseSecret(cfg ProjectConfig, spec map[string]interface{}) (*secretCmd, er
 		cmdargs = args
 	} else {
 		// See if the project configures an alias to simplify service defs.
-		if commands, ok := secretConfig["commands"].(map[string]interface{}); ok {
+		if commands, ok := cfg["secret_commands"].(map[string]interface{}); ok {
 			if command, ok := commands[name].(map[string]interface{}); ok {
 
 				if preArgs, ok := stringSlice(command["exec"]); ok {
@@ -109,7 +108,7 @@ func parseSecret(cfg ProjectConfig, spec map[string]interface{}) (*secretCmd, er
 		return nil, fmt.Errorf("failed to prepare secret command '%s'", name)
 	}
 
-	passphrase, _ := secretConfig["passphrase"].(string)
+	passphrase, _ := cfg["secret_passphrase"].(string)
 
 	return &secretCmd{
 		name: name,

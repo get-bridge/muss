@@ -23,16 +23,14 @@ func TestSecretCommands(t *testing.T) {
 		os.Unsetenv("MUSS_TEST_PASSPHRASE")
 
 		cfg := map[string]interface{}{
-			"secrets": map[string]interface{}{
-				"passphrase": "$MUSS_TEST_PASSPHRASE",
-				"commands": map[string]interface{}{
-					"some": map[string]interface{}{
-						"exec": []string{secretCmdPath, "something"},
-						"env_commands": []interface{}{
-							map[string]interface{}{
-								"exec":    []string{secretCmdPath, "pre-cmd"},
-								"varname": "MUSS_TEST_PASSPHRASE",
-							},
+			"secret_passphrase": "$MUSS_TEST_PASSPHRASE",
+			"secret_commands": map[string]interface{}{
+				"some": map[string]interface{}{
+					"exec": []string{secretCmdPath, "something"},
+					"env_commands": []interface{}{
+						map[string]interface{}{
+							"exec":    []string{secretCmdPath, "pre-cmd"},
+							"varname": "MUSS_TEST_PASSPHRASE",
 						},
 					},
 				},
@@ -120,16 +118,14 @@ func TestSecretCommands(t *testing.T) {
 			os.Unsetenv("MUSS_TEST_LINE_2_SECRET")
 
 			cfg := map[string]interface{}{
-				"secrets": map[string]interface{}{
-					"passphrase": "$MUSS_TEST_PASSPHRASE",
-					"commands": map[string]interface{}{
-						"some": map[string]interface{}{
-							"exec": []string{secretCmdPath, "--multi"},
-							"env_commands": []interface{}{
-								map[string]interface{}{
-									"exec":  []string{secretCmdPath, "--multi", "SETUP"},
-									"parse": true,
-								},
+				"secret_passphrase": "$MUSS_TEST_PASSPHRASE",
+				"secret_commands": map[string]interface{}{
+					"some": map[string]interface{}{
+						"exec": []string{secretCmdPath, "--multi"},
+						"env_commands": []interface{}{
+							map[string]interface{}{
+								"exec":  []string{secretCmdPath, "--multi", "SETUP"},
+								"parse": true,
 							},
 						},
 					},
@@ -174,11 +170,9 @@ func TestSecretCommands(t *testing.T) {
 		os.Unsetenv(varname)
 
 		cfg := map[string]interface{}{
-			"secrets": map[string]interface{}{
-				"commands": map[string]interface{}{
-					"some": map[string]interface{}{
-						"exec": []string{secretCmdPath, "something"},
-					},
+			"secret_commands": map[string]interface{}{
+				"some": map[string]interface{}{
+					"exec": []string{secretCmdPath, "something"},
 				},
 			},
 		}
@@ -197,14 +191,14 @@ func TestSecretCommands(t *testing.T) {
 			"a passphrase is required to use secrets",
 			testSecretError(t, cfg, secretSpec))
 
-		subMap(cfg, "secrets")["passphrase"] = "static"
+		cfg["secret_passphrase"] = "static"
 
 		assert.Equal(t,
 			"passphrase should contain a variable so it isn't plain text",
 			testSecretError(t, cfg, secretSpec))
 
 		os.Unsetenv("MUSS_TEST_PASSPHRASE")
-		subMap(cfg, "secrets")["passphrase"] = "$MUSS_TEST_PASSPHRASE"
+		cfg["secret_passphrase"] = "$MUSS_TEST_PASSPHRASE"
 
 		assert.Equal(t,
 			"a passphrase is required to use secrets",
@@ -217,7 +211,7 @@ func TestSecretCommands(t *testing.T) {
 			`secret cannot have multiple commands: ("some" and "exec"|"exec" and "some")`,
 			testSecretError(t, cfg, secretSpec))
 
-		subMap(subMap(subMap(cfg, "secrets"), "commands"), "some")["exec"] = []string{secretCmdPath, "--no-var"}
+		subMap(subMap(cfg, "secret_commands"), "some")["exec"] = []string{secretCmdPath, "--no-var"}
 
 		secretSpec = map[string]interface{}{
 			"some": []string{},

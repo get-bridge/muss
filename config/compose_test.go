@@ -158,11 +158,10 @@ user:
 
 		os.Setenv("MUSS_TEST_PASSPHRASE", "decomposing")
 		config := preferRegistry + serviceFiles + `
-secrets:
-  passphrase: $MUSS_TEST_PASSPHRASE
-  commands:
-    print:
-      exec: [echo]
+secret_passphrase: $MUSS_TEST_PASSPHRASE
+secret_commands:
+  print:
+    exec: [echo]
 user:
   service_preference: [repo]
   services:
@@ -182,8 +181,7 @@ user:
 
 		assertComposed(t,
 			`
-secrets:
-  passphrase: $MUSS_TEST_PASSPHRASE
+secret_passphrase: $MUSS_TEST_PASSPHRASE
 service_definitions:
 - name: one
   configs:

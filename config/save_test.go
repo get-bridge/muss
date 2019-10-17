@@ -48,9 +48,7 @@ func TestConfigSave(t *testing.T) {
 				},
 			}
 			cfg := map[string]interface{}{
-				"secrets": map[string]interface{}{
-					"passphrase": "$MUSS_TEST_PASSPHRASE",
-				},
+				"secret_passphrase": "$MUSS_TEST_PASSPHRASE",
 				"service_definitions": []ServiceDef{
 					map[string]interface{}{
 						"name": "app",
