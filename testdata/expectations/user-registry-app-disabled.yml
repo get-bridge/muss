@@ -1,0 +1,19 @@
+version: '3.7'
+services:
+  ms:
+    image: reg:2
+  store:
+    build: ./store
+    volumes:
+      - 'storedata:/data'
+      - type: bind
+        source: './somedir'
+        target: '/var/somedir'
+      - type: bind
+        source: '${MUSS_TEST_FILE_VOL:-./vol}/file'
+        target: '/var/somefile'
+        read_only: true
+        consistency: cached
+    command: [init]
+volumes:
+  storedata: {}

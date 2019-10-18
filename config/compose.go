@@ -142,23 +142,24 @@ func serviceConfig(config map[string]interface{}, service ServiceDef) (map[strin
 	serviceConfigs := service["configs"].(map[string]interface{})
 	options := mapKeys(serviceConfigs)
 
-	var userConfig map[string]interface{}
-	if user, ok := config["user"].(map[string]interface{}); ok {
-		userConfig = user
+	var userConfig UserConfig
+	if err := mapToStruct(config["user"], &userConfig); err != nil {
+		return nil, fmt.Errorf("error loading user config: %s", err)
 	}
 
-	var result map[string]interface{}
+	result := make(map[string]interface{})
 
-	// Check if user configured a specific choice for this service:
-	// `services: {somename: {config: choice}}`
+	// Check if user configured this service specifically.
 	userChoice := ""
-	if userServices, ok := userConfig["services"].(map[string]interface{}); ok {
-		if userserv, ok := userServices[serviceName].(map[string]interface{}); ok {
-			if val, ok := userserv["config"].(string); ok {
-				userChoice = val
-				if _, ok := serviceConfigs[userChoice]; !ok {
-					return nil, fmt.Errorf("Config '%s' for service '%s' does not exist", userChoice, serviceName)
-				}
+	if userserv, ok := userConfig.Services[serviceName]; ok {
+		if userserv.Disabled {
+			return result, nil
+		}
+
+		userChoice = userserv.Config
+		if userChoice != "" {
+			if _, ok := serviceConfigs[userChoice]; !ok {
+				return nil, fmt.Errorf("Config '%s' for service '%s' does not exist", userChoice, serviceName)
 			}
 		}
 	}
@@ -172,14 +173,10 @@ func serviceConfig(config map[string]interface{}, service ServiceDef) (map[strin
 	} else {
 
 		// To determine which config option to use we can build a list...
-		var order []string
+		// starting with any user configured preference...
+		order := userConfig.ServicePreference
 
-		// starting with any user configured preference
-		if slice, ok := stringSlice(userConfig["service_preference"]); ok {
-			order = append(order, slice...)
-		}
-
-		// followed by any project defaults
+		// followed by any project defaults...
 		if slice, ok := stringSlice(config["default_service_preference"]); ok {
 			order = append(order, slice...)
 		}

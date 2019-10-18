@@ -12,6 +12,16 @@ var UserFile string
 // ProjectConfig is a type for the parsed contents of the project config file.
 type ProjectConfig map[string]interface{}
 
+// UserConfig represents the user's customization file.
+type UserConfig struct {
+	ServicePreference []string `mapstructure:"service_preference"`
+	Services          map[string]struct {
+		Config   string
+		Disabled bool
+	}
+	Override map[string]interface{}
+}
+
 // ServiceDef represents a service definition read from a file.
 type ServiceDef map[string]interface{}
 

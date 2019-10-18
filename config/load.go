@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/mitchellh/mapstructure"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -85,6 +86,20 @@ func fileExists(file string) bool {
 		return false
 	}
 	return true
+}
+
+func mapToStruct(input interface{}, pointer interface{}) error {
+	config := &mapstructure.DecoderConfig{
+		// Make it clear to the user if something in the config
+		// will have no effect.
+		ErrorUnused: true,
+		Result:      pointer,
+	}
+	decoder, err := mapstructure.NewDecoder(config)
+	if err != nil {
+		return err
+	}
+	return decoder.Decode(input)
 }
 
 func readYamlFile(file string) (map[string]interface{}, error) {

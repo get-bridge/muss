@@ -127,6 +127,19 @@ user:
 		assertComposed(t, config, exp, "user preference overrides orders")
 	})
 
+	t.Run("user can disable services", func(t *testing.T) {
+		config := preferRegistry + serviceFiles + `
+user:
+  services:
+    app:
+      disabled: true
+`
+
+		exp := readTestFile(t, "../testdata/expectations/user-registry-app-disabled.yml")
+
+		assertComposed(t, config, exp, "user disabled services")
+	})
+
 	t.Run("config errors", func(t *testing.T) {
 		assertComposed(t,
 			(preferRegistry + serviceFiles + `
