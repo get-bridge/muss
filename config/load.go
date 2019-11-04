@@ -11,17 +11,17 @@ import (
 
 // SetConfig sets the global config to the provided arg
 // (used internally for testing).
-func SetConfig(cfg ProjectConfig) {
+func SetConfig(cfg map[string]interface{}) {
 	if cfg == nil {
 		project = nil
 		return
 	}
 
-	prepared, err := prepare(cfg)
+	var err error
+	project, err = prepare(cfg)
 	if err != nil {
 		log.Fatalln("Failed to process config:", err)
 	}
-	project = prepared
 }
 
 func load() {
@@ -38,30 +38,30 @@ func load() {
 	SetConfig(object)
 }
 
-func prepare(object map[string]interface{}) (ProjectConfig, error) {
-	prepared := object
-
-	if files, ok := stringSlice(object["service_files"]); ok {
-		loaded, err := loadServiceDefs(files)
-		if err != nil {
-			return nil, err
-		}
-		prepared = mapMerge(prepared, map[string]interface{}{"service_definitions": loaded})
-
-		// TODO: else: mention that they might want service_files?
+func prepare(object map[string]interface{}) (*ProjectConfig, error) {
+	prepared, err := NewProjectConfigFromMap(object)
+	if err != nil {
+		return nil, err
 	}
+
+	loaded, err := loadServiceDefs(prepared.ServiceFiles)
+	if err != nil {
+		return nil, err
+	}
+	prepared.ServiceDefinitions = append(prepared.ServiceDefinitions, loaded...)
+	// TODO: else: mention that they might want service_files?
 
 	if UserFile != "" {
-		prepared["user_file"] = UserFile
+		prepared.UserFile = UserFile
 	}
 
-	if file, ok := prepared["user_file"].(string); ok {
-		if fileExists(file) {
-			user, err := readYamlFile(file)
+	if prepared.UserFile != "" {
+		if fileExists(prepared.UserFile) {
+			user, err := readYamlFile(prepared.UserFile)
 			if err != nil {
 				return nil, err
 			}
-			prepared["user"] = user
+			prepared.User = user
 		}
 	}
 
@@ -100,6 +100,14 @@ func mapToStruct(input interface{}, pointer interface{}) error {
 		return err
 	}
 	return decoder.Decode(input)
+}
+
+func structToMap(input interface{}) (map[string]interface{}, error) {
+	var result map[string]interface{}
+	if err := mapToStruct(input, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func readYamlFile(file string) (map[string]interface{}, error) {
@@ -144,13 +152,6 @@ func stringifyKeys(m map[interface{}]interface{}) map[string]interface{} {
 		}
 	}
 	return result
-}
-
-func subMap(cfg ProjectConfig, key string) map[string]interface{} {
-	if val, ok := cfg[key].(map[string]interface{}); ok {
-		return val
-	}
-	return map[string]interface{}{}
 }
 
 func stringSlice(obj interface{}) ([]string, bool) {

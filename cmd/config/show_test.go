@@ -75,7 +75,6 @@ func TestConfigShow(t *testing.T) {
 			},
 			"service_preference": []string{"repo", "registry"},
 		},
-		"yamlbreaker": func() {},
 		"service_definitions": []config.ServiceDef{
 			map[string]interface{}{
 				"name": "app",
@@ -130,7 +129,11 @@ func TestConfigShow(t *testing.T) {
 	})
 
 	t.Run("config show errors", func(t *testing.T) {
-		config.SetConfig(cfg)
+		config.SetConfig(map[string]interface{}{
+			"user": map[string]interface{}{
+				"services": func() {},
+			},
+		})
 
 		assert.Contains(t,
 			showErr(t, `{{`),
@@ -139,7 +142,7 @@ func TestConfigShow(t *testing.T) {
 		)
 
 		assert.Contains(t,
-			showErr(t, `{{ yaml .yamlbreaker }}`),
+			showErr(t, `{{ yaml .user }}`),
 			`cannot marshal type: func()`,
 			"yaml() function error on stderr",
 		)

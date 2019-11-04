@@ -49,10 +49,15 @@ Template examples:
 	return cmd
 }
 
-func processTemplate(format string, cfg config.ProjectConfig, writer io.Writer) error {
+func processTemplate(format string, cfg *config.ProjectConfig, writer io.Writer) error {
+	cfgMap, err := cfg.ToMap()
+	if err != nil {
+		panic(err)
+	}
+
 	funcMap := template.FuncMap{
 		"compose": func() map[string]interface{} {
-			dc, err := config.DockerComposeConfig(cfg)
+			dc, err := config.GenerateDockerComposeConfig(cfg)
 			if err != nil {
 				panic(err)
 			}
@@ -60,12 +65,12 @@ func processTemplate(format string, cfg config.ProjectConfig, writer io.Writer) 
 		},
 		"yaml": yamlToString,
 		// for ease and consistency with compose...
-		"project": func() config.ProjectConfig {
-			return cfg
+		"project": func() map[string]interface{} {
+			return cfgMap
 		},
 		"user": func() map[string]interface{} {
-			if user, ok := cfg["user"].(map[string]interface{}); ok {
-				return user
+			if cfg.User != nil {
+				return cfg.User
 			}
 			return map[string]interface{}{}
 		},
@@ -75,8 +80,7 @@ func processTemplate(format string, cfg config.ProjectConfig, writer io.Writer) 
 	if err != nil {
 		return err
 	}
-
-	return t.Execute(writer, cfg)
+	return t.Execute(writer, cfgMap)
 }
 
 func yamlToString(object interface{}) string {

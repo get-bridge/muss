@@ -19,19 +19,19 @@ type FileGenMap map[string]FileGenFunc
 // generated.
 var DockerComposeFile = "docker-compose.yml"
 
-// DockerComposeConfig returns an object ready to be yaml-dumped as a
+// GenerateDockerComposeConfig returns an object ready to be yaml-dumped as a
 // docker-compose file (or an error).
-func DockerComposeConfig(config ProjectConfig) (map[string]interface{}, error) {
-	dcc, _, err := DockerComposeFiles(config)
+func GenerateDockerComposeConfig(config *ProjectConfig) (DockerComposeConfig, error) {
+	dcc, _, err := GenerateDockerComposeFiles(config)
 	return dcc, err
 }
 
-// DockerComposeFiles returns a map of the docker-compose config,
+// GenerateDockerComposeFiles returns a map of the docker-compose config,
 // a map representing supplementary files, and an error.
 // The files value is a `map[string]func(string) error` where the key is
 // the file path and the value is a function that takes the path argument
 // and writes the file or errors.
-func DockerComposeFiles(config ProjectConfig) (dcc map[string]interface{}, files FileGenMap, err error) {
+func GenerateDockerComposeFiles(cfg *ProjectConfig) (dcc DockerComposeConfig, files FileGenMap, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = r.(error)
@@ -39,31 +39,12 @@ func DockerComposeFiles(config ProjectConfig) (dcc map[string]interface{}, files
 	}()
 
 	files = make(FileGenMap)
-	var user map[string]interface{}
-	if u, ok := config["user"].(map[string]interface{}); ok {
-		user = u
-	}
 
 	// Setup a base to merge things onto.
-	dcc = map[string]interface{}{
-		"version":  "3.7", // latest
-		"volumes":  map[string]interface{}{},
-		"services": map[string]interface{}{},
-	}
+	dcc = NewDockerComposeConfig()
 
-	var servdefs []ServiceDef
-	if val, ok := config["service_definitions"].([]ServiceDef); ok {
-		servdefs = val
-	} else if val, ok := config["service_definitions"].([]interface{}); ok {
-		servdefs = make([]ServiceDef, len(val))
-		for i, s := range val {
-			servdefs[i] = s.(map[string]interface{})
-		}
-	}
-
-	secrets := make([]envLoader, 0)
-	for _, service := range servdefs {
-		servconf, err := serviceConfig(config, service)
+	for _, service := range cfg.ServiceDefinitions {
+		servconf, err := serviceConfig(cfg, service)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -90,11 +71,12 @@ func DockerComposeFiles(config ProjectConfig) (dcc map[string]interface{}, files
 			}
 
 			for _, spec := range secretsToParse {
-				parsed, err := parseSecret(config, spec)
+				parsed, err := parseSecret(cfg, spec)
 				if err != nil {
 					return nil, nil, err
 				}
-				secrets = append(secrets, parsed)
+				// TODO make it obvious we are modifying func arg
+				cfg.Secrets = append(cfg.Secrets, parsed)
 			}
 
 			delete(servconf, "secrets")
@@ -103,7 +85,7 @@ func DockerComposeFiles(config ProjectConfig) (dcc map[string]interface{}, files
 		dcc = mapMerge(dcc, servconf)
 	}
 
-	if override, ok := user["override"].(map[string]interface{}); ok {
+	if override, ok := cfg.User["override"].(map[string]interface{}); ok {
 		dcc = mapMerge(dcc, override)
 	}
 
@@ -129,21 +111,16 @@ func DockerComposeFiles(config ProjectConfig) (dcc map[string]interface{}, files
 		}
 	}
 
-	// FIXME: We're in a bad mix of "global and not"...
-	// We should either make ProjectConfig an actual type and assign this to it
-	// or quit passing configs as args and just make everything global.
-	projectSecrets = secrets
-
 	return dcc, files, nil
 }
 
-func serviceConfig(config map[string]interface{}, service ServiceDef) (map[string]interface{}, error) {
+func serviceConfig(config *ProjectConfig, service ServiceDef) (ServiceConfig, error) {
 	serviceName := service["name"].(string)
 	serviceConfigs := service["configs"].(map[string]interface{})
 	options := mapKeys(serviceConfigs)
 
 	var userConfig UserConfig
-	if err := mapToStruct(config["user"], &userConfig); err != nil {
+	if err := mapToStruct(config.User, &userConfig); err != nil {
 		return nil, fmt.Errorf("error loading user config: %s", err)
 	}
 
@@ -174,12 +151,8 @@ func serviceConfig(config map[string]interface{}, service ServiceDef) (map[strin
 
 		// To determine which config option to use we can build a list...
 		// starting with any user configured preference...
-		order := userConfig.ServicePreference
-
 		// followed by any project defaults...
-		if slice, ok := stringSlice(config["default_service_preference"]); ok {
-			order = append(order, slice...)
-		}
+		order := append(userConfig.ServicePreference, config.DefaultServicePreference...)
 
 		// then iterate and use the first preference that this service defines.
 		for _, o := range order {

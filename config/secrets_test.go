@@ -22,9 +22,9 @@ func TestSecretCommands(t *testing.T) {
 
 		os.Unsetenv("MUSS_TEST_PASSPHRASE")
 
-		cfg := map[string]interface{}{
-			"secret_passphrase": "$MUSS_TEST_PASSPHRASE",
-			"secret_commands": map[string]interface{}{
+		cfg := ProjectConfig{
+			SecretPassphrase: "$MUSS_TEST_PASSPHRASE",
+			SecretCommands: map[string]interface{}{
 				"some": map[string]interface{}{
 					"exec": []string{secretCmdPath, "something"},
 					"env_commands": []interface{}{
@@ -48,7 +48,7 @@ func TestSecretCommands(t *testing.T) {
 		logvarname := "MUSS_TEST_SECRET_LOG"
 		os.Setenv(logvarname, "shhh")
 
-		secret, err := parseSecret(cfg, secretSpec)
+		secret, err := parseSecret(&cfg, secretSpec)
 		if err != nil {
 			t.Fatalf("error preparing secret env file: %s", err)
 		}
@@ -117,9 +117,9 @@ func TestSecretCommands(t *testing.T) {
 			os.Unsetenv("MUSS_TEST_LINE_1_SECRET")
 			os.Unsetenv("MUSS_TEST_LINE_2_SECRET")
 
-			cfg := map[string]interface{}{
-				"secret_passphrase": "$MUSS_TEST_PASSPHRASE",
-				"secret_commands": map[string]interface{}{
+			cfg := &ProjectConfig{
+				SecretPassphrase: "$MUSS_TEST_PASSPHRASE",
+				SecretCommands: map[string]interface{}{
 					"some": map[string]interface{}{
 						"exec": []string{secretCmdPath, "--multi"},
 						"env_commands": []interface{}{
@@ -169,8 +169,8 @@ func TestSecretCommands(t *testing.T) {
 		varname := "MUSS_TEST_SECRET_VAR"
 		os.Unsetenv(varname)
 
-		cfg := map[string]interface{}{
-			"secret_commands": map[string]interface{}{
+		cfg := &ProjectConfig{
+			SecretCommands: map[string]interface{}{
 				"some": map[string]interface{}{
 					"exec": []string{secretCmdPath, "something"},
 				},
@@ -191,14 +191,14 @@ func TestSecretCommands(t *testing.T) {
 			"a passphrase is required to use secrets",
 			testSecretError(t, cfg, secretSpec))
 
-		cfg["secret_passphrase"] = "static"
+		cfg.SecretPassphrase = "static"
 
 		assert.Equal(t,
 			"passphrase should contain a variable so it isn't plain text",
 			testSecretError(t, cfg, secretSpec))
 
 		os.Unsetenv("MUSS_TEST_PASSPHRASE")
-		cfg["secret_passphrase"] = "$MUSS_TEST_PASSPHRASE"
+		cfg.SecretPassphrase = "$MUSS_TEST_PASSPHRASE"
 
 		assert.Equal(t,
 			"a passphrase is required to use secrets",
@@ -211,8 +211,9 @@ func TestSecretCommands(t *testing.T) {
 			`secret cannot have multiple commands: ("some" and "exec"|"exec" and "some")`,
 			testSecretError(t, cfg, secretSpec))
 
-		subMap(subMap(cfg, "secret_commands"), "some")["exec"] = []string{secretCmdPath, "--no-var"}
-
+		cfg.SecretCommands["some"] = map[string]interface{}{
+			"exec": []string{secretCmdPath, "--no-var"},
+		}
 		secretSpec = map[string]interface{}{
 			"some": []string{},
 		}
@@ -234,8 +235,9 @@ func TestSecretCommands(t *testing.T) {
 	})
 }
 
-func testSecretError(t *testing.T, cfg ProjectConfig, spec map[string]interface{}) string {
+func testSecretError(t *testing.T, cfg *ProjectConfig, spec map[string]interface{}) string {
 	t.Helper()
+
 	s, err := parseSecret(cfg, spec)
 	// Some errors don't occur until trying to load it.
 	if err == nil {

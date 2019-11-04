@@ -15,7 +15,6 @@ import (
 	"golang.org/x/crypto/pbkdf2"
 )
 
-var envFileDir string
 var secretDir string
 
 type secretCmd struct {
@@ -23,8 +22,6 @@ type secretCmd struct {
 	*envCmd
 	passphrase string
 }
-
-var projectSecrets []envLoader
 
 func init() {
 	findCacheRoot()
@@ -56,7 +53,7 @@ type secretSetup struct {
 
 var secretEnvCommands = make(map[string]*secretSetup)
 
-func parseSecret(cfg ProjectConfig, spec map[string]interface{}) (*secretCmd, error) {
+func parseSecret(cfg *ProjectConfig, spec map[string]interface{}) (*secretCmd, error) {
 	var name string
 	var args []string
 	var varname string
@@ -88,8 +85,8 @@ func parseSecret(cfg ProjectConfig, spec map[string]interface{}) (*secretCmd, er
 		cmdargs = args
 	} else {
 		// See if the project configures an alias to simplify service defs.
-		if commands, ok := cfg["secret_commands"].(map[string]interface{}); ok {
-			if command, ok := commands[name].(map[string]interface{}); ok {
+		if cfg.SecretCommands != nil {
+			if command, ok := cfg.SecretCommands[name].(map[string]interface{}); ok {
 
 				if preArgs, ok := stringSlice(command["exec"]); ok {
 					cmdargs = append(preArgs, args...)
@@ -108,8 +105,6 @@ func parseSecret(cfg ProjectConfig, spec map[string]interface{}) (*secretCmd, er
 		return nil, fmt.Errorf("failed to prepare secret command '%s'", name)
 	}
 
-	passphrase, _ := cfg["secret_passphrase"].(string)
-
 	return &secretCmd{
 		name: name,
 		envCmd: &envCmd{
@@ -117,7 +112,7 @@ func parseSecret(cfg ProjectConfig, spec map[string]interface{}) (*secretCmd, er
 			parse:   parse,
 			varname: varname,
 		},
-		passphrase: passphrase,
+		passphrase: cfg.SecretPassphrase,
 	}, nil
 }
 

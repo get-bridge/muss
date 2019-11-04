@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path"
@@ -69,13 +70,13 @@ func touch(file string) error {
 	return nil
 }
 
-func generateFiles(cfg ProjectConfig) {
+func generateFiles(cfg *ProjectConfig) {
 	// If there is not project config file, there is nothing to do.
 	if cfg == nil {
 		return
 	}
 
-	dc, files, err := DockerComposeFiles(cfg)
+	dc, files, err := GenerateDockerComposeFiles(cfg)
 	if err != nil {
 		log.Fatalln("Error creating docker-compose config:\n", err)
 	}
@@ -89,9 +90,9 @@ func generateFiles(cfg ProjectConfig) {
 #
 `)
 
-		if file, ok := cfg["user_file"]; ok {
+		if cfg.UserFile != "" {
 			content = append(content,
-				[]byte("# To configure the services you want to use edit "+file.(string)+".\n#\n")...)
+				[]byte(fmt.Sprintf("# To configure the services you want to use edit %v.\n#\n", cfg.UserFile))...)
 		}
 
 		content = append(content, []byte("\n---\n")...)
@@ -111,7 +112,7 @@ func generateFiles(cfg ProjectConfig) {
 		}
 	}
 
-	if err := loadEnvFromCmds(projectSecrets...); err != nil {
+	if err := loadEnvFromCmds(cfg.Secrets...); err != nil {
 		log.Fatalln("Failed to load secrets:", err)
 	}
 }

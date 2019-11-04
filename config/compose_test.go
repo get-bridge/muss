@@ -12,50 +12,51 @@ import (
 // - don't let any tabs get in
 // - file paths are relative to this test file's parent dir
 
-func parseAndCompose(config string) (parsed ProjectConfig, err error) {
-	parsed, err = parseYaml([]byte(config))
+func parseAndCompose(yaml string) (map[string]interface{}, *ProjectConfig, error) {
+	parsed, err := parseYaml([]byte(yaml))
 	if err != nil {
-		return
+		return nil, nil, err
 	}
 
-	parsed, err = prepare(parsed)
+	cfg, err := prepare(parsed)
 	if err != nil {
-		return
+		return nil, nil, err
 	}
 
-	parsed, err = DockerComposeConfig(parsed)
-
-	return
+	dc, err := GenerateDockerComposeConfig(cfg)
+	if err != nil {
+		return nil, nil, err
+	}
+	return dc, cfg, nil
 }
 
 func assertConfigError(t *testing.T, config, expErr string, msgAndArgs ...interface{}) {
-	_, err := parseAndCompose(config)
+	_, _, err := parseAndCompose(config)
 	if err == nil {
 		t.Fatal("expected error, found nil")
 	}
 	assert.Contains(t, err.Error(), expErr, msgAndArgs...)
 }
 
-func assertComposed(t *testing.T, config, exp string, msgAndArgs ...interface{}) {
+func assertComposed(t *testing.T, config, exp string, msgAndArgs ...interface{}) *ProjectConfig {
 	t.Helper()
 
-	var parsedExp, dc map[string]interface{}
-	var err error
-
-	parsedExp, err = parseYaml([]byte(exp))
+	parsedExp, err := parseYaml([]byte(exp))
 	if err != nil {
 		t.Fatalf("Error parsing exp yaml: %s", err)
 	}
 
-	dc, err = parseAndCompose(config)
+	actual, projectConfig, err := parseAndCompose(config)
 	if err != nil {
 		t.Fatalf("Error parsing config: %s", err)
 	}
 
 	assert.Equal(t,
 		parsedExp,
-		dc,
+		actual,
 		msgAndArgs...)
+
+	return projectConfig
 }
 
 func TestDockerComposeConfig(t *testing.T) {
@@ -167,8 +168,6 @@ user:
 		// We don't actually create this we just want a string.
 		setCacheRoot("/tmp/.muss-test-cache")
 
-		projectSecrets = nil
-
 		os.Setenv("MUSS_TEST_PASSPHRASE", "decomposing")
 		config := preferRegistry + serviceFiles + `
 secret_passphrase: $MUSS_TEST_PASSPHRASE
@@ -184,15 +183,15 @@ user:
 
 		exp := readTestFile(t, "../testdata/expectations/user-registry-ms-remote.yml")
 
-		assertComposed(t, config, exp, "service defs with secrets")
+		projectConfig := assertComposed(t, config, exp, "service defs with secrets")
 
-		if len(projectSecrets) != 2 {
-			t.Fatalf("expected 2 secrets, found %d", len(projectSecrets))
+		if len(projectConfig.Secrets) != 2 {
+			t.Fatalf("expected 2 secrets, found %d", len(projectConfig.Secrets))
 		}
-		assert.Equal(t, "MSKEY", projectSecrets[0].VarName())
-		assert.Equal(t, "OTHER_SECRET_TEST", projectSecrets[1].VarName())
+		assert.Equal(t, "MSKEY", projectConfig.Secrets[0].VarName())
+		assert.Equal(t, "OTHER_SECRET_TEST", projectConfig.Secrets[1].VarName())
 
-		assertComposed(t,
+		projectConfig = assertComposed(t,
 			`
 secret_passphrase: $MUSS_TEST_PASSPHRASE
 service_definitions:
@@ -215,9 +214,9 @@ service_definitions:
 			"secrets as map or list",
 		)
 
-		actualVarNames := make([]string, len(projectSecrets))
-		for i := range projectSecrets {
-			actualVarNames[i] = projectSecrets[i].VarName()
+		actualVarNames := make([]string, len(projectConfig.Secrets))
+		for i := range projectConfig.Secrets {
+			actualVarNames[i] = projectConfig.Secrets[i].VarName()
 		}
 
 		assert.ElementsMatch(t,
