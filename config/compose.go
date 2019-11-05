@@ -85,8 +85,8 @@ func GenerateDockerComposeFiles(cfg *ProjectConfig) (dcc DockerComposeConfig, fi
 		dcc = mapMerge(dcc, servconf)
 	}
 
-	if override, ok := cfg.User["override"].(map[string]interface{}); ok {
-		dcc = mapMerge(dcc, override)
+	if cfg.User != nil && cfg.User.Override != nil {
+		dcc = mapMerge(dcc, cfg.User.Override)
 	}
 
 	// Iterate over each service to remove any muss extensions
@@ -118,25 +118,21 @@ func serviceConfig(config *ProjectConfig, service ServiceDef) (ServiceConfig, er
 	serviceName := service["name"].(string)
 	serviceConfigs := service["configs"].(map[string]interface{})
 	options := mapKeys(serviceConfigs)
-
-	var userConfig UserConfig
-	if err := mapToStruct(config.User, &userConfig); err != nil {
-		return nil, fmt.Errorf("error loading user config: %s", err)
-	}
-
-	result := make(map[string]interface{})
+	result := NewServiceConfig()
 
 	// Check if user configured this service specifically.
 	userChoice := ""
-	if userserv, ok := userConfig.Services[serviceName]; ok {
-		if userserv.Disabled {
-			return result, nil
-		}
+	if config.User != nil {
+		if userserv, ok := config.User.Services[serviceName]; ok {
+			if userserv.Disabled {
+				return result, nil
+			}
 
-		userChoice = userserv.Config
-		if userChoice != "" {
-			if _, ok := serviceConfigs[userChoice]; !ok {
-				return nil, fmt.Errorf("Config '%s' for service '%s' does not exist", userChoice, serviceName)
+			userChoice = userserv.Config
+			if userChoice != "" {
+				if _, ok := serviceConfigs[userChoice]; !ok {
+					return nil, fmt.Errorf("Config '%s' for service '%s' does not exist", userChoice, serviceName)
+				}
 			}
 		}
 	}
@@ -148,11 +144,16 @@ func serviceConfig(config *ProjectConfig, service ServiceDef) (ServiceConfig, er
 		// If there is only one option, use it.
 		result = serviceConfigs[options[0]].(map[string]interface{})
 	} else {
-
 		// To determine which config option to use we can build a list...
 		// starting with any user configured preference...
+		var order []string
+		if config.User != nil {
+			order = config.User.ServicePreference
+		} else {
+			order = []string{}
+		}
 		// followed by any project defaults...
-		order := append(userConfig.ServicePreference, config.DefaultServicePreference...)
+		order = append(order, config.DefaultServicePreference...)
 
 		// then iterate and use the first preference that this service defines.
 		for _, o := range order {

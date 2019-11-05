@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"reflect"
 
 	"github.com/mitchellh/mapstructure"
 	yaml "gopkg.in/yaml.v2"
@@ -59,7 +60,11 @@ func prepare(object map[string]interface{}) (*ProjectConfig, error) {
 
 	if prepared.UserFile != "" {
 		if fileExists(prepared.UserFile) {
-			user, err := readYamlFile(prepared.UserFile)
+			userMap, err := readYamlFile(prepared.UserFile)
+			if err != nil {
+				return nil, err
+			}
+			user, err := UserConfigFromMap(userMap)
 			if err != nil {
 				return nil, err
 			}
@@ -108,6 +113,21 @@ func structToMap(input interface{}) (map[string]interface{}, error) {
 	var result map[string]interface{}
 	if err := mapToStruct(input, &result); err != nil {
 		return nil, err
+	}
+	// TODO hack around mapstructure saving structs
+	for key, value := range result {
+		switch reflect.TypeOf(value).Kind() {
+		case reflect.Ptr:
+			fallthrough
+		case reflect.Struct:
+			fallthrough
+		case reflect.Map:
+			mapValue, err := structToMap(value)
+			if err != nil {
+				return nil, err
+			}
+			result[key] = mapValue
+		}
 	}
 	return result, nil
 }

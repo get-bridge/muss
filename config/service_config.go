@@ -5,3 +5,7 @@ type ServiceDef map[string]interface{}
 
 // ServiceConfig represents a service config in docker-compose.
 type ServiceConfig map[string]interface{}
+
+func NewServiceConfig() ServiceConfig {
+	return ServiceConfig{}
+}

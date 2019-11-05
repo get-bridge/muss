@@ -76,7 +76,7 @@ func TestConfigShow(t *testing.T) {
 			"service_preference": []string{"repo", "registry"},
 		},
 		"service_definitions": []config.ServiceDef{
-			map[string]interface{}{
+			config.ServiceDef{
 				"name": "app",
 				"configs": map[string]interface{}{
 					"sole": exp,
@@ -131,7 +131,9 @@ func TestConfigShow(t *testing.T) {
 	t.Run("config show errors", func(t *testing.T) {
 		config.SetConfig(map[string]interface{}{
 			"user": map[string]interface{}{
-				"services": func() {},
+				"override": map[string]interface{}{
+					"yamlbreaker": func() {},
+				},
 			},
 		})
 

@@ -70,7 +70,11 @@ func processTemplate(format string, cfg *config.ProjectConfig, writer io.Writer)
 		},
 		"user": func() map[string]interface{} {
 			if cfg.User != nil {
-				return cfg.User
+				cfgMap, err := cfg.User.ToMap()
+				if err != nil {
+					panic(err)
+				}
+				return cfgMap
 			}
 			return map[string]interface{}{}
 		},

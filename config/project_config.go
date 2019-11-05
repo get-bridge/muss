@@ -9,7 +9,7 @@ import (
 type ProjectConfig struct {
 	ServiceDefinitions       []ServiceDef           `mapstructure:"service_definitions"`
 	UserFile                 string                 `mapstructure:"user_file"`
-	User                     map[string]interface{} `mapstructure:"user"` // TODO UserConfig
+	User                     *UserConfig            `mapstructure:"user"`
 	ServiceFiles             []string               `mapstructure:"service_files"`
 	SecretCommands           map[string]interface{} `mapstructure:"secret_commands"`
 	SecretPassphrase         string                 `mapstructure:"secret_passphrase"`
@@ -24,7 +24,7 @@ func NewProjectConfig() *ProjectConfig {
 
 func NewProjectConfigFromMap(cfgMap map[string]interface{}) (*ProjectConfig, error) {
 	result := NewProjectConfig()
-	if err := mapToStruct(cfgMap, &result); err != nil {
+	if err := mapToStruct(cfgMap, result); err != nil {
 		log.Println(err)
 	}
 	return result, nil
