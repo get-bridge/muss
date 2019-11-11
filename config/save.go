@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"sync"
 
 	yaml "gopkg.in/yaml.v2"
 )
@@ -105,12 +106,17 @@ func generateFiles(cfg *ProjectConfig) {
 		log.Fatalln("Failed to open file for writing:", err)
 	}
 
-	// TODO: run these concurrently and bubble errors.
+	var wg sync.WaitGroup
 	for path, fn := range files {
-		if err := fn(path); err != nil {
-			log.Fatalln("Failed to save file:", err)
-		}
+		wg.Add(1)
+		go func(path string, fn FileGenFunc) {
+			defer wg.Done()
+			if err := fn(path); err != nil {
+				log.Fatalln("Failed to save file:", err)
+			}
+		}(path, fn)
 	}
+	wg.Wait()
 
 	if err := loadEnvFromCmds(cfg.Secrets...); err != nil {
 		log.Fatalln("Failed to load secrets:", err)

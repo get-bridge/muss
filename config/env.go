@@ -2,9 +2,11 @@ package config
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
+	"sync"
 )
 
 type envCmd struct {
@@ -100,40 +102,62 @@ func (e *envCmd) VarName() string {
 	return e.varname
 }
 
-// loadEnvFromCmds takes envLoaders and runs them and updates the current env.
-func loadEnvFromCmds(envCmds ...envLoader) error {
-	// TODO: load these concurrently
-	for _, e := range envCmds {
-		// For a single value...
-		if !e.ShouldParse() {
-			varname := e.VarName()
-			if varname == "" {
-				return fmt.Errorf(`env command must have either "parse: true" or a "varname"`)
-			}
-			// Only get it if not already set.
-			if _, ok := os.LookupEnv(varname); !ok {
-				val, err := e.Value()
-				if err != nil {
-					return err
-				}
-				if err := os.Setenv(varname, string(val)); err != nil {
-					return err
-				}
-			}
-		} else {
-			if e.VarName() != "" {
-				return fmt.Errorf(`use "parse: true" or "varname", not both`)
-			}
-			// If we don't know what env vars it will load
-			// we have to call it.
+func loadEnv(e envLoader) error {
+	// For a single value...
+	if !e.ShouldParse() {
+		varname := e.VarName()
+		if varname == "" {
+			return fmt.Errorf(`env command must have either "parse: true" or a "varname"`)
+		}
+		// Only get it if not already set.
+		if _, ok := os.LookupEnv(varname); !ok {
 			val, err := e.Value()
 			if err != nil {
 				return err
 			}
-			return loadEnvFromBytes(val)
+			if err := os.Setenv(varname, string(val)); err != nil {
+				return err
+			}
 		}
+	} else {
+		if e.VarName() != "" {
+			return fmt.Errorf(`use "parse: true" or "varname", not both`)
+		}
+		// If we don't know what env vars it will load
+		// we have to call it.
+		val, err := e.Value()
+		if err != nil {
+			return err
+		}
+		return loadEnvFromBytes(val)
 	}
+	return nil
+}
 
+// loadEnvFromCmds takes envLoaders and runs them and updates the current env.
+func loadEnvFromCmds(envCmds ...envLoader) error {
+	cmdErrors := make(chan error, len(envCmds))
+	var wg sync.WaitGroup
+	for _, env := range envCmds {
+		wg.Add(1)
+		go func(env envLoader) {
+			defer wg.Done()
+			err := loadEnv(env)
+			if err != nil {
+				cmdErrors <- err
+			}
+		}(env)
+	}
+	wg.Wait()
+	close(cmdErrors)
+
+	if len(cmdErrors) > 0 {
+		var errorMessage string
+		for e := range cmdErrors {
+			errorMessage += e.Error()
+		}
+		return errors.New(errorMessage)
+	}
 	return nil
 }
 
