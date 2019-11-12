@@ -166,6 +166,15 @@ The syntax and options for the main `muss.yaml` file:
     # A passphrase is required for local caching of the secrets.
     # Use an env var representing your auth token.
     secret_passphrase: $VAULT_TOKEN
+
+    # A status line will be fixed to the bottom of the screen during "up".
+    status:
+      # Stdout from this command will appear in the status line.
+      exec: ["bin/muss-status"]
+      # Each line of status output will be formatted with this spec:
+      line_format: "# %s"
+      # Specify how often to execute the command to update the status:
+      interval: 5s
 ```
 
 

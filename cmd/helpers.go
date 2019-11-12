@@ -11,13 +11,17 @@ import (
 
 var dc = "docker-compose"
 
-// DelegateCmd runs with a delegator made from a `cobra.Cmd`.
-func DelegateCmd(cmd *cobra.Command, commands ...*exec.Cmd) (err error) {
+func cmdDelegator(cmd *cobra.Command) *proc.Delegator {
 	return (&proc.Delegator{
 		Stdin:  cmd.InOrStdin(),
 		Stdout: cmd.OutOrStdout(),
 		Stderr: cmd.ErrOrStderr(),
-	}).Delegate(commands...)
+	})
+}
+
+// DelegateCmd runs with a delegator made from a `cobra.Cmd`.
+func DelegateCmd(cmd *cobra.Command, commands ...*exec.Cmd) (err error) {
+	return cmdDelegator(cmd).Delegate(commands...)
 }
 
 func dcFlagsFromCmd(cmd *cobra.Command) []string {

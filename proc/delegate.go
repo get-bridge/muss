@@ -12,6 +12,7 @@ type Delegator struct {
 	Stdin  io.Reader
 	Stdout io.Writer
 	Stderr io.Writer
+	DoneCh chan bool
 }
 
 // Delegate runs with a Delegator made from `os.Std*`.
@@ -53,6 +54,11 @@ func (d *Delegator) Delegate(commands ...*exec.Cmd) (err error) {
 		select {
 		case sig := <-signals:
 			// Should we revert to default so they can hit ctrl-c again?
+
+			// Let listening go routines know that we are going to exit.
+			if d.DoneCh != nil {
+				close(d.DoneCh)
+			}
 
 			var wg sync.WaitGroup
 

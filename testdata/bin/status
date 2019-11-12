@@ -1,0 +1,4 @@
+#!/bin/sh
+
+[ $# -gt 0 ] && echo "$*"
+echo ok!

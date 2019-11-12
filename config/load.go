@@ -97,6 +97,7 @@ func fileExists(file string) bool {
 
 func mapToStruct(input interface{}, pointer interface{}) error {
 	config := &mapstructure.DecoderConfig{
+		DecodeHook: mapstructure.StringToTimeDurationHookFunc(),
 		// Make it clear to the user if something in the config
 		// will have no effect.
 		ErrorUnused: true,

@@ -10,3 +10,8 @@ service_files:
   - ./testdata/app.yml
   - ./testdata/microservice.yml
   - ./testdata/store.yml
+
+status:
+  exec: ["/bin/sh", "-c", "[[ 0 -eq $((RANDOM % 2)) ]] && echo prefix line ; date"]
+  line_format: "# %s"
+  interval: 3s

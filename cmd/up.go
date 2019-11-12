@@ -1,9 +1,18 @@
 package cmd
 
 import (
+	"bufio"
+	"bytes"
+	"fmt"
+	"os"
+	"os/exec"
+	"strings"
+	"time"
+
 	"github.com/spf13/cobra"
 
 	"gerrit.instructure.com/muss/config"
+	"gerrit.instructure.com/muss/term"
 )
 
 func newUpCommand() *cobra.Command {
@@ -49,10 +58,15 @@ If you want to force Compose to stop and recreate all containers, use the
 		RunE: func(cmd *cobra.Command, args []string) error {
 			config.Save()
 
-			return DelegateCmd(
-				cmd,
-				dockerComposeCmd(cmd, args),
-			)
+			// TODO: or noANSI
+			if opts.detach {
+				return DelegateCmd(
+					cmd,
+					dockerComposeCmd(cmd, args),
+				)
+			}
+
+			return runUpWithStatus(cmd, args)
 		},
 	}
 
@@ -79,4 +93,73 @@ If you want to force Compose to stop and recreate all containers, use the
 
 func init() {
 	rootCmd.AddCommand(newUpCommand())
+}
+
+func runUpWithStatus(cmd *cobra.Command, args []string) error {
+	pr, pw, err := os.Pipe()
+	if err != nil {
+		return err
+	}
+
+	delegator := cmdDelegator(cmd)
+	delegator.Stdout = pw
+
+	done := make(chan bool)
+	delegator.DoneCh = done
+
+	// Setup a channel for log output.
+	outputCh := make(chan []byte, 10)
+	go func() {
+		defer pr.Close()
+		scanner := bufio.NewScanner(pr)
+		for scanner.Scan() {
+			outputCh <- scanner.Bytes()
+		}
+	}()
+
+	// Setup a channel for status updates.
+	statusCh := make(chan string, 1)
+	statusCh <- "# muss"
+	statusConfig := config.All().Status
+	if statusConfig != nil && len(statusConfig.Exec) > 0 {
+		go func() {
+			format := "# %s"
+			if statusConfig.LineFormat != "" {
+				format = statusConfig.LineFormat
+			}
+			statusCmd := statusConfig.Exec
+			interval := statusConfig.Interval
+
+			var stdout bytes.Buffer
+			for {
+				select {
+				// After() should be fine here since there are only two paths:
+				// either the timer has finished or we are exiting.
+				case <-time.After(interval):
+					stdout.Reset()
+					cmd := exec.Command(statusCmd[0], statusCmd[1:]...)
+					cmd.Stdin = os.Stdin
+					cmd.Stdout = &stdout
+					cmd.Run()
+					lines := strings.Split(strings.TrimRight(stdout.String(), "\n"), "\n")
+					for i, line := range lines {
+						lines[i] = fmt.Sprintf(format, line)
+					}
+					statusCh <- strings.Join(lines, "\n")
+				case <-done:
+					return // go routine
+				}
+			}
+		}()
+	}
+
+	go term.WriteWithFixedStatusLine(cmd.OutOrStdout(), outputCh, statusCh, done)
+
+	defer func() {
+		pw.Close()
+	}()
+
+	return delegator.Delegate(
+		dockerComposeCmd(cmd, args),
+	)
 }
