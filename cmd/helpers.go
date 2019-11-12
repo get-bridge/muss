@@ -29,7 +29,7 @@ func dcFlagsFromCmd(cmd *cobra.Command) []string {
 		switch flag.Value.Type() {
 		case "bool":
 			// just the name
-		case "string":
+		case "int", "string":
 			arg += "=" + flag.Value.String()
 		default:
 			panic("flag delegation undefined for " + flag.Name)

@@ -7,6 +7,25 @@ import (
 )
 
 func newUpCommand() *cobra.Command {
+	opts := struct {
+		detach               bool
+		noColor              bool
+		quietPull            bool
+		noDeps               bool
+		forceRecreate        bool
+		alwaysRecreateDeps   bool
+		noRecreate           bool
+		noBuild              bool
+		noStart              bool
+		build                bool
+		abortOnContainerExit bool
+		timeout              int
+		renewAnonVolumes     bool
+		removeOrphans        bool
+		exitCodeFrom         string
+		scale                string
+	}{}
+
 	var cmd = &cobra.Command{
 		Use:   "up",
 		Short: "Create and start containers",
@@ -25,39 +44,8 @@ volumes). To prevent picking up changes, use the "--no-recreate" flag.
 
 If you want to force Compose to stop and recreate all containers, use the
 "--force-recreate" flag.
-
-Options:
-  -d, --detach               Detached mode: Run containers in the background,
-                             print new container names. Incompatible with
-                             --abort-on-container-exit.
-  --no-color                 Produce monochrome output.
-  --quiet-pull               Pull without printing progress information
-  --no-deps                  Don't start linked services.
-  --force-recreate           Recreate containers even if their configuration
-                             and image haven't changed.
-  --always-recreate-deps     Recreate dependent containers.
-                             Incompatible with --no-recreate.
-  --no-recreate              If containers already exist, don't recreate
-                             them. Incompatible with --force-recreate and -V.
-  --no-build                 Don't build an image, even if it's missing.
-  --no-start                 Don't start the services after creating them.
-  --build                    Build images before starting containers.
-  --abort-on-container-exit  Stops all containers if any container was
-                             stopped. Incompatible with -d.
-  -t, --timeout TIMEOUT      Use this timeout in seconds for container
-                             shutdown when attached or when containers are
-                             already running. (default: 10)
-  -V, --renew-anon-volumes   Recreate anonymous volumes instead of retrieving
-                             data from the previous containers.
-  --remove-orphans           Remove containers for services not defined
-                             in the Compose file.
-  --exit-code-from SERVICE   Return the exit code of the selected service
-                             container. Implies --abort-on-container-exit.
-  --scale SERVICE=NUM        Scale SERVICE to NUM instances. Overrides the
-                             "scale" setting in the Compose file if present.
 `,
-		Args:               cobra.ArbitraryArgs,
-		DisableFlagParsing: true,
+		Args: cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			config.Save()
 
@@ -68,8 +56,23 @@ Options:
 		},
 	}
 
-	// Just show "Long" by providing a zero-width (but not zero-value) string.
-	cmd.SetUsageTemplate(`{{ "" }}`)
+	cmd.Flags().SortFlags = false
+	cmd.Flags().BoolVarP(&opts.detach, "detach", "d", false, "Detached mode: Run containers in the background,\nprint new container names. Incompatible with\n--abort-on-container-exit.")
+	cmd.Flags().BoolVarP(&opts.noColor, "no-color", "", false, "Produce monochrome output.")
+	cmd.Flags().BoolVarP(&opts.quietPull, "quiet-pull", "", false, "Pull without printing progress information")
+	cmd.Flags().BoolVarP(&opts.noDeps, "no-deps", "", false, "Don't start linked services.")
+	cmd.Flags().BoolVarP(&opts.forceRecreate, "force-recreate", "", false, "Recreate containers even if their configuration\nand image haven't changed.")
+	cmd.Flags().BoolVarP(&opts.alwaysRecreateDeps, "always-recreate-deps", "", false, "Recreate dependent containers.\nIncompatible with --no-recreate.")
+	cmd.Flags().BoolVarP(&opts.noRecreate, "no-recreate", "", false, "If containers already exist, don't recreate\nthem. Incompatible with --force-recreate and -V.")
+	cmd.Flags().BoolVarP(&opts.noBuild, "no-build", "", false, "Don't build an image, even if it's missing.")
+	cmd.Flags().BoolVarP(&opts.noStart, "no-start", "", false, "Don't start the services after creating them.")
+	cmd.Flags().BoolVarP(&opts.build, "build", "", false, "Build images before starting containers.")
+	cmd.Flags().BoolVarP(&opts.abortOnContainerExit, "abort-on-container-exit", "", false, "Stops all containers if any container was\nstopped. Incompatible with -d.")
+	cmd.Flags().IntVarP(&opts.timeout, "timeout", "t", 10, "Use this `timeout` in seconds for container\nshutdown when attached or when containers are\nalready running. (default: 10)")
+	cmd.Flags().BoolVarP(&opts.renewAnonVolumes, "renew-anon-volumes", "V", false, "Recreate anonymous volumes instead of retrieving\ndata from the previous containers.")
+	cmd.Flags().BoolVarP(&opts.removeOrphans, "remove-orphans", "", false, "Remove containers for services not defined\nin the Compose file.")
+	cmd.Flags().StringVarP(&opts.exitCodeFrom, "exit-code-from", "", "", "Return the exit code of the selected `service`\ncontainer. Implies --abort-on-container-exit.")
+	cmd.Flags().StringVarP(&opts.scale, "scale", "", "", "With `SERVICE=NUM` scale SERVICE to NUM instances.\nOverrides the `scale` setting in the Compose file if present.")
 
 	return cmd
 }

@@ -31,7 +31,7 @@ func TestUpCommand(t *testing.T) {
 
 			expOut := `docker-compose
 up
--d
+--detach
 --no-color
 --quiet-pull
 --no-deps
@@ -42,14 +42,11 @@ up
 --no-start
 --build
 --abort-on-container-exit
--t
-4
--V
+--timeout=4
+--renew-anon-volumes
 --remove-orphans
---exit-code-from
-svc
---scale
-SERVICE=NUM
+--exit-code-from=svc
+--scale=SERVICE=NUM
 svc
 `
 
