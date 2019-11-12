@@ -10,8 +10,6 @@ import (
 	config "gerrit.instructure.com/muss/config"
 )
 
-var cfgFile string
-
 var rootCmd = &cobra.Command{
 	Use:   "muss",
 	Short: "Configure and run project services",
@@ -31,13 +29,11 @@ func Execute() int {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is "+config.DefaultFile+")")
-
 	rootCmd.AddCommand(cmdconfig.NewCommand())
 }
 
 func initConfig() {
-	if cfgFile != "" {
+	if cfgFile, ok := os.LookupEnv("MUSS_FILE"); ok {
 		config.ProjectFile = cfgFile
 	}
 	config.UserFile = os.Getenv("MUSS_USER_FILE")

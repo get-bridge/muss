@@ -1,10 +1,7 @@
 package config
 
-// DefaultFile is the name of the default config file.
-var DefaultFile = "muss.yaml"
-
 // ProjectFile is the path to the project config file.
-var ProjectFile = DefaultFile
+var ProjectFile = "muss.yaml"
 
 // UserFile is the path to the user config file, if defined.
 var UserFile string
