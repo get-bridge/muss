@@ -3,6 +3,8 @@ name: app
 
 configs:
   _base:
+    volumes:
+      deps: {}
     services:
       web: &w1
         entrypoint: [/entrypoint]
@@ -17,10 +19,12 @@ configs:
     services:
       web: &w2
         command: [web]
-        env_file: ./env.string # need not exist
+        env_file: ./testdata/env/string
       work:
         command: [work]
-        env_file: [./env.list, ./env.list.2]
+        env_file:
+          - ./testdata/env/list
+          - ./testdata/env/list.2
 
   repo:
     include:
@@ -34,7 +38,7 @@ configs:
         environment:
           GIANT: bear cat
         volumes:
-          - './:/app'
+          - './testdata:/app'
         entrypoint: [/app/entrypoint]
       work: *w3
 
@@ -44,5 +48,7 @@ configs:
       - _base_frd
     services:
       web: &w4
-        image: thing
+        image: alpine
+        volumes:
+          - './testdata/entrypoint:/entrypoint'
       work: *w4

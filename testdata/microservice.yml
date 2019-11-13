@@ -2,7 +2,16 @@
 name: microservice
 
 configs:
+  _base:
+    services:
+      ms:
+        entrypoint: [/entrypoint]
+        command: [ms]
+        volumes:
+          - './testdata/entrypoint:/entrypoint'
   repo:
+    include:
+      - _base
     volumes:
       msdeps: {}
     services:
@@ -30,9 +39,11 @@ configs:
           OTHER_SECRET_TEST:
 
   registry:
+    include:
+      - _base
     services:
       ms:
-        image: reg:2
+        image: alpine
       web:
         environment:
           MSKEY: reg

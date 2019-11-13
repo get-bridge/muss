@@ -7,17 +7,19 @@ configs:
       storedata: {}
     services:
       store:
-        build: ./store
+        image: alpine
         volumes:
+          - './testdata/entrypoint:/entrypoint'
           - 'storedata:/data'
           - type: bind
-            source: './somedir'
+            source: './testdata/vol/somedir'
             target: '/var/somedir'
             # ensure a bind mount without "file" doesn't error
           - type: bind
-            source: '${MUSS_TEST_FILE_VOL:-./vol}/file'
+            source: '${MUSS_TEST_FILE_VOL:-./testdata/vol}/file'
             target: '/var/somefile'
             read_only: true
             file: true
             consistency: cached
-        command: [init]
+        entrypoint: [/entrypoint]
+        command: [store]

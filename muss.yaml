@@ -7,6 +7,6 @@ default_service_preference:
   - repo
 
 service_files:
-  - ./app.yml
-  - ./microservice.yml
-  - ./store.yml
+  - ./testdata/app.yml
+  - ./testdata/microservice.yml
+  - ./testdata/store.yml

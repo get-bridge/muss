@@ -4,7 +4,7 @@ services:
     build: ./
     command: [web]
     entrypoint: [/app/entrypoint]
-    env_file: ./env.string
+    env_file: ./testdata/env/string
     environment:
       PANDA: BEAR
       GIANT: bear cat
@@ -12,34 +12,35 @@ services:
       OTHER_SECRET_TEST:
     volumes:
       - 'deps:/deps'
-      - './:/app'
+      - './testdata:/app'
   work:
     build: ./
     command: [work]
     entrypoint: [/app/entrypoint]
     env_file:
-      - ./env.list
-      - ./env.list.2
+      - ./testdata/env/list
+      - ./testdata/env/list.2
     environment:
       PANDA: BEAR
       GIANT: bear cat
     volumes:
       - 'deps:/deps'
-      - './:/app'
+      - './testdata:/app'
   store:
-    build: ./store
+    image: alpine
     volumes:
+      - './testdata/entrypoint:/entrypoint'
       - 'storedata:/data'
       - type: bind
-        source: './somedir'
+        source: './testdata/vol/somedir'
         target: '/var/somedir'
       - type: bind
-        source: '${MUSS_TEST_FILE_VOL:-./vol}/file'
+        source: '${MUSS_TEST_FILE_VOL:-./testdata/vol}/file'
         target: '/var/somefile'
         read_only: true
         consistency: cached
-    command:
-      - init
+    entrypoint: [/entrypoint]
+    command: [store]
 volumes:
   deps: {}
   storedata: {}
