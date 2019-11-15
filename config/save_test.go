@@ -23,6 +23,19 @@ func TestConfigSave(t *testing.T) {
 			SetConfig(nil)
 			generateFiles(nil)
 			// no errors
+
+			// no compose file
+			assertNotExist(t, "docker-compose.yml")
+
+			SetConfig(map[string]interface{}{
+				"status": map[string]interface{}{
+					"exec": []string{"echo", "hi"},
+				},
+			})
+			assert.Equal(t, All().Status.Exec, []string{"echo", "hi"}, "has config")
+			generateFiles(All())
+			// still no compose file
+			assertNotExist(t, "docker-compose.yml")
 		})
 
 		t.Run("config save", func(t *testing.T) {
@@ -98,6 +111,7 @@ func TestConfigSave(t *testing.T) {
 			assertNotExist(t, "./pre-existing.file")
 			touch("./pre-existing.file")
 
+			SetConfig(nil)
 			assert.Nil(t, project, "Project config not yet loaded") // prove that Save will load it.
 			Save()
 			assert.NotNil(t, project, "Save loads project config first")

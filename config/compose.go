@@ -40,6 +40,11 @@ func GenerateDockerComposeFiles(cfg *ProjectConfig) (dcc DockerComposeConfig, fi
 
 	files = make(FileGenMap)
 
+	// If there are no service defs there's nothing for us to write.
+	if len(cfg.ServiceDefinitions) == 0 {
+		return nil, files, nil
+	}
+
 	// Setup a base to merge things onto.
 	dcc = NewDockerComposeConfig()
 
