@@ -59,6 +59,25 @@ svc
 			assert.Equal(t, expOut, stdout)
 		})
 
+		t.Run("up without muss.yaml", func(*testing.T) {
+			os.Setenv("MUSS_TEST_UP_LOGS", "1")
+			defer os.Unsetenv("MUSS_TEST_UP_LOGS")
+
+			config.SetConfig(nil)
+
+			stdout, stderr, err := testCmdBuilder(newUpCommand, []string{})
+
+			expOut := term.AnsiEraseToEnd +
+				term.AnsiReset + "# muss" + term.AnsiReset + term.AnsiStart +
+				term.AnsiEraseToEnd + "log\n" +
+				term.AnsiReset + "# muss" + term.AnsiReset + term.AnsiStart +
+				""
+
+			assert.Nil(t, err)
+			assert.Equal(t, "", stderr)
+			assert.Equal(t, expOut, stdout)
+		})
+
 		t.Run("up with status", func(*testing.T) {
 			os.Setenv("MUSS_TEST_UP_LOGS", "1")
 			defer os.Unsetenv("MUSS_TEST_UP_LOGS")

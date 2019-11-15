@@ -120,15 +120,15 @@ func runUpWithStatus(cmd *cobra.Command, args []string) error {
 	// Setup a channel for status updates.
 	statusCh := make(chan string, 1)
 	statusCh <- "# muss"
-	statusConfig := config.All().Status
-	if statusConfig != nil && len(statusConfig.Exec) > 0 {
+	cfg := config.All()
+	if cfg != nil && cfg.Status != nil && len(cfg.Status.Exec) > 0 {
 		go func() {
 			format := "# %s"
-			if statusConfig.LineFormat != "" {
-				format = statusConfig.LineFormat
+			if cfg.Status.LineFormat != "" {
+				format = cfg.Status.LineFormat
 			}
-			statusCmd := statusConfig.Exec
-			interval := statusConfig.Interval
+			statusCmd := cfg.Status.Exec
+			interval := cfg.Status.Interval
 
 			var stdout bytes.Buffer
 			for {
