@@ -59,6 +59,26 @@ svc
 			assert.Equal(t, expOut, stdout)
 		})
 
+		t.Run("up with args that disable status", func(*testing.T) {
+			os.Setenv("MUSS_TEST_UP_LOGS", "1")
+			defer os.Unsetenv("MUSS_TEST_UP_LOGS")
+
+			config.SetConfig(nil)
+
+			// TODO: --no-status
+			args := []string{"-d", "--no-start"}
+
+			for _, arg := range args {
+				stdout, stderr, err := testCmdBuilder(newUpCommand, []string{arg})
+
+				expOut := "log\n"
+
+				assert.Nil(t, err)
+				assert.Equal(t, "", stderr)
+				assert.Equal(t, expOut, stdout)
+			}
+		})
+
 		t.Run("up without muss.yaml", func(*testing.T) {
 			os.Setenv("MUSS_TEST_UP_LOGS", "1")
 			defer os.Unsetenv("MUSS_TEST_UP_LOGS")

@@ -17,6 +17,8 @@ import (
 
 func newUpCommand() *cobra.Command {
 	opts := struct {
+		noStatus bool
+
 		detach               bool
 		noColor              bool
 		quietPull            bool
@@ -58,12 +60,18 @@ If you want to force Compose to stop and recreate all containers, use the
 		RunE: func(cmd *cobra.Command, args []string) error {
 			config.Save()
 
-			// TODO: or noANSI
-			if opts.detach {
+			switch {
+			// TODO: global noANSI
+			case opts.detach:
+				fallthrough
+			case opts.noStart:
+				fallthrough
+			case opts.noStatus:
 				return DelegateCmd(
 					cmd,
 					dockerComposeCmd(cmd, args),
 				)
+			default:
 			}
 
 			return runUpWithStatus(cmd, args)
@@ -71,6 +79,11 @@ If you want to force Compose to stop and recreate all containers, use the
 	}
 
 	cmd.Flags().SortFlags = false
+	// muss only
+	// TODO: need to annotate custom muss flags so that we don't pass them to
+	// docker-compose.
+	// cmd.Flags().BoolVarP(&opts.noStatus, "no-status", "", false, "Do not show muss status at the bottom of the log output.")
+
 	cmd.Flags().BoolVarP(&opts.detach, "detach", "d", false, "Detached mode: Run containers in the background,\nprint new container names. Incompatible with\n--abort-on-container-exit.")
 	cmd.Flags().BoolVarP(&opts.noColor, "no-color", "", false, "Produce monochrome output.")
 	cmd.Flags().BoolVarP(&opts.quietPull, "quiet-pull", "", false, "Pull without printing progress information")
