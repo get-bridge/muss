@@ -109,6 +109,14 @@ user_file: ../testdata/user-registry-ms-repo.yml
 		assertComposed(t, config, exp, "user preference overrides orders")
 	})
 
+	t.Run("env var custom service config", func(t *testing.T) {
+		config := preferRepo + serviceFiles
+		defer os.Unsetenv("MUSS_SERVICE_PREFERENCE")
+
+		os.Setenv("MUSS_SERVICE_PREFERENCE", "registry")
+		assertComposed(t, config, expRegistry, "MUSS_SERVICE_PREFERENCE env var overrides orders")
+	})
+
 	t.Run("user override", func(t *testing.T) {
 		config := preferRegistry + serviceFiles + `
 user:

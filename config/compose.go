@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"os"
 	"path"
 	"strings"
 
@@ -142,7 +143,10 @@ func serviceConfig(config *ProjectConfig, service ServiceDef) (ServiceConfig, er
 		}
 	}
 
-	if userChoice != "" {
+	if envChoice := os.Getenv("MUSS_SERVICE_PREFERENCE"); envChoice != "" && serviceConfigs[envChoice] != nil {
+		// If specified via env var, use it.
+		result = serviceConfigs[envChoice].(map[string]interface{})
+	} else if userChoice != "" {
 		// If user chose specifically, use it.
 		result = serviceConfigs[userChoice].(map[string]interface{})
 	} else if len(options) == 1 {
