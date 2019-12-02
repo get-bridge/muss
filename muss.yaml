@@ -2,6 +2,10 @@
 
 user_file: muss.user.yaml
 
+secret_commands:
+  print:
+    exec: [echo]
+
 default_service_preference:
   - registry
   - repo
