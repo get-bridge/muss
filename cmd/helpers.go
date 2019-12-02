@@ -29,7 +29,15 @@ func dcFlagsFromCmd(cmd *cobra.Command) []string {
 
 	// Determine which flags were set and pass them on.
 	cmd.Flags().Visit(func(flag *pflag.Flag) {
-		arg := "--" + flag.Name
+		var arg string
+		// If dc only defines the shorthand make sure we send it that way.
+		// see also https://github.com/spf13/pflag/issues/213
+		if flag.Name == flag.Shorthand {
+			arg = "-" + flag.Shorthand
+		} else {
+			arg = "--" + flag.Name
+		}
+
 		switch flag.Value.Type() {
 		case "bool":
 			// just the name
@@ -38,6 +46,7 @@ func dcFlagsFromCmd(cmd *cobra.Command) []string {
 		default:
 			panic("flag delegation undefined for " + flag.Name)
 		}
+
 		args = append(args, arg)
 	})
 
