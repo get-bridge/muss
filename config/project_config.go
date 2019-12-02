@@ -19,10 +19,12 @@ type ProjectConfig struct {
 	Secrets []envLoader
 }
 
+// NewProjectConfig returns new ProjectConfig
 func NewProjectConfig() *ProjectConfig {
 	return &ProjectConfig{}
 }
 
+// NewProjectConfigFromMap returns new ProjectConfig from map[string]interface{}
 func NewProjectConfigFromMap(cfgMap map[string]interface{}) (*ProjectConfig, error) {
 	result := NewProjectConfig()
 	if err := mapToStruct(cfgMap, result); err != nil {
@@ -31,6 +33,7 @@ func NewProjectConfigFromMap(cfgMap map[string]interface{}) (*ProjectConfig, err
 	return result, nil
 }
 
+// ToMap returns new map[string]interface{} from ProjectConfig
 func (cfg *ProjectConfig) ToMap() (map[string]interface{}, error) {
 	cfgMap, err := structToMap(cfg)
 	if err != nil {
