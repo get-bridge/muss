@@ -4,7 +4,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"sync"
 )
 
 // Delegator holds readers/writers to which to delegate command output.
@@ -35,8 +34,6 @@ func (d *Delegator) Delegate(commands ...*exec.Cmd) (err error) {
 
 	cmdch := make(chan *exec.Cmd, len(commands))
 	for _, cmd := range commands {
-		prepareCommand(cmd)
-
 		cmd.Stdin = d.Stdin
 		cmd.Stdout = d.Stdout
 		cmd.Stderr = d.Stderr
@@ -53,32 +50,26 @@ func (d *Delegator) Delegate(commands ...*exec.Cmd) (err error) {
 	for {
 		select {
 		case sig := <-signals:
-			// Should we revert to default so they can hit ctrl-c again?
-
 			// Let listening go routines know that we are going to exit.
 			if d.DoneCh != nil {
 				close(d.DoneCh)
+				// Don't try to close it again.
+				d.DoneCh = nil
 			}
 
-			var wg sync.WaitGroup
+			// Don't forward SIGINT since ctrl-c will go to the process group.
+			// Sending again would double the number of signals the child receives.
+			if sig == os.Interrupt {
+				continue
+			}
 
 			for _, cmd := range commands {
-				wg.Add(2) // one for the actual cmd object and one for the process group
-
-				go func(pid int) {
-					waitForProcessGroup(pid)
-					wg.Done()
-				}(cmd.Process.Pid)
-
-				go func(cmd *exec.Cmd) {
-					sendSignal(cmd.Process, sig)
-					cmd.Wait()
-					wg.Done()
-				}(cmd)
+				cmd.Process.Signal(sig)
 			}
 
-			wg.Wait()
-			return
+			// Go back to the loop and wait for the commands to finish.
+			continue
+
 		case <-cmdch:
 			finished++
 			if finished == len(commands) {

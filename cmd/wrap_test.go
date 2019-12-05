@@ -31,25 +31,25 @@ func TestWrapCommand(t *testing.T) {
 			assert.Equal(t, expOut, strings.Join(actual, ""))
 		})
 
-		t.Run("wait for process groups", func(*testing.T) {
+		t.Run("wait for processes", func(*testing.T) {
 
-			// Give the cmd 1s to start up then sent interrupt.
+			// Give the cmd 1s to start up then send signal.
 			go func() {
 				time.Sleep(1 * time.Second)
-				syscall.Kill(os.Getpid(), syscall.SIGINT)
+				syscall.Kill(os.Getpid(), syscall.SIGTERM)
 			}()
 
 			stdout, stderr, err := testCmdBuilder(newWrapCommand, []string{
 				"-s", "/bin/sh",
-				"-c", "out () { sleep 1; echo c >&2; }; trap out INT; sleep 15",
-				"-c", `$0 -c "out () { sleep 1; echo a; }; trap out TERM; sleep 16 & wait" & pids=$!; $0 -c "out () { sleep 2; echo b; }; trap out TERM; sleep 17 & wait" & pids="$pids $!"; all () { kill -s TERM $pids; wait; }; trap all INT; sleep 18`,
+				"-c", "out () { sleep 1; echo c >&2; }; trap out TERM; sleep 5",
+				"-c", `$0 -c "out () { sleep 1; echo a; }; trap out TERM; sleep 6 & wait" & pids=$!; $0 -c "out () { sleep 2; echo b; }; trap out TERM; sleep 7 & wait" & pids="$pids $!"; all () { kill -s TERM $pids; wait; }; trap all TERM; sleep 8 & wait`,
 			})
 
 			expOut := "a\nb\n"
 
 			assert.Nil(t, err)
 			assert.Equal(t, "c\n", stderr)
-			assert.Equal(t, expOut, stdout, "args passed through")
+			assert.Equal(t, expOut, stdout, "got output from all")
 		})
 
 		t.Run("usage errors", func(*testing.T) {
