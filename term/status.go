@@ -43,6 +43,7 @@ func WriteWithFixedStatusLine(writer io.Writer, outputCh chan []byte, statusCh c
 		case output := <-outputCh:
 			writeWithStatusLine(writer, output, status)
 		case <-done:
+			writeWithStatusLine(writer, nil, "")
 			return
 		}
 	}

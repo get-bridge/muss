@@ -48,6 +48,7 @@ func TestWriteWithFixedStatusLine(t *testing.T) {
 		AnsiEraseToEnd + "log three\n" +
 		AnsiReset + "prefix\nyeah" + AnsiReset + AnsiStart + AnsiUp +
 		AnsiEraseToEnd + AnsiReset + "done" + AnsiReset + AnsiStart +
+		AnsiEraseToEnd + AnsiReset + "" + AnsiReset + AnsiStart +
 		""
 
 	assert.Equal(t, expOut, writer.String())
