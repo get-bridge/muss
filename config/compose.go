@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -20,39 +21,59 @@ type FileGenMap map[string]FileGenFunc
 // generated.
 var DockerComposeFile = "docker-compose.yml"
 
-// GenerateDockerComposeConfig returns an object ready to be yaml-dumped as a
-// docker-compose file (or an error).
-func GenerateDockerComposeConfig(config *ProjectConfig) (DockerComposeConfig, error) {
-	dcc, _, err := GenerateDockerComposeFiles(config)
-	return dcc, err
+func (cfg *ProjectConfig) loadComposeConfig() error {
+	if cfg.composeConfig == nil {
+		if len(cfg.ServiceDefinitions) == 0 {
+			fmt.Println("[WARN] No services configured. Consider adding some with `service_files`.")
+		} else {
+			err := cfg.parseServiceDefinitions()
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
-// GenerateDockerComposeFiles returns a map of the docker-compose config,
-// a map representing supplementary files, and an error.
-// The files value is a `map[string]func(string) error` where the key is
-// the file path and the value is a function that takes the path argument
-// and writes the file or errors.
-func GenerateDockerComposeFiles(cfg *ProjectConfig) (dcc DockerComposeConfig, files FileGenMap, err error) {
+// ComposeConfig returns a map[string]interface ready to be yaml dumped as a
+// docker-compose.yml file.
+func (cfg *ProjectConfig) ComposeConfig() (map[string]interface{}, error) {
+	if err := cfg.loadComposeConfig(); err != nil {
+		return nil, err
+	}
+	return cfg.composeConfig, nil
+}
+
+// FilesToGenerate returns a FileGenMap of additional files to write.
+func (cfg *ProjectConfig) FilesToGenerate() (FileGenMap, error) {
+	if err := cfg.loadComposeConfig(); err != nil {
+		return nil, err
+	}
+	return cfg.filesToGenerate, nil
+}
+
+// parseServiceDefinitions iterates the ProjectConfig.ServiceDefitions
+// to build up and store the docker compose map, file gen map, and secrets
+// on the ProjectConfig value.
+// If an error is returned no changes will be made to the value.
+func (cfg *ProjectConfig) parseServiceDefinitions() (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = r.(error)
 		}
 	}()
 
-	files = make(FileGenMap)
-
-	// If there are no service defs there's nothing for us to write.
-	if len(cfg.ServiceDefinitions) == 0 {
-		return nil, files, nil
-	}
-
 	// Setup a base to merge things onto.
-	dcc = NewDockerComposeConfig()
+	dcc := map[string]interface{}{
+		"version": "3.7", // latest
+	}
+	files := make(FileGenMap)
+	secrets := make([]envLoader, 0)
 
 	for _, service := range cfg.ServiceDefinitions {
 		servconf, err := serviceConfig(cfg, service)
 		if err != nil {
-			return nil, nil, err
+			return err
 		}
 
 		secretsToParse := make([]map[string]interface{}, 0)
@@ -63,7 +84,7 @@ func GenerateDockerComposeFiles(cfg *ProjectConfig) (dcc DockerComposeConfig, fi
 					if val, ok := spec.(map[string]interface{}); ok {
 						secretsToParse = append(secretsToParse, mapMerge(map[string]interface{}{"varname": varname}, val))
 					} else {
-						return nil, nil, fmt.Errorf("secret spec must be a map")
+						return errors.New("secret spec must be a map")
 					}
 				}
 			} else if slice, ok := s.([]interface{}); ok {
@@ -71,7 +92,7 @@ func GenerateDockerComposeFiles(cfg *ProjectConfig) (dcc DockerComposeConfig, fi
 					if val, ok := spec.(map[string]interface{}); ok {
 						secretsToParse = append(secretsToParse, val)
 					} else {
-						return nil, nil, fmt.Errorf("secret spec must be a map")
+						return errors.New("secret spec must be a map")
 					}
 				}
 			}
@@ -79,10 +100,9 @@ func GenerateDockerComposeFiles(cfg *ProjectConfig) (dcc DockerComposeConfig, fi
 			for _, spec := range secretsToParse {
 				parsed, err := parseSecret(cfg, spec)
 				if err != nil {
-					return nil, nil, err
+					return err
 				}
-				// TODO make it obvious we are modifying func arg
-				cfg.Secrets = append(cfg.Secrets, parsed)
+				secrets = append(secrets, parsed)
 			}
 
 			delete(servconf, "secrets")
@@ -103,7 +123,7 @@ func GenerateDockerComposeFiles(cfg *ProjectConfig) (dcc DockerComposeConfig, fi
 
 				bindvols, err := prepareVolumes(service)
 				if err != nil {
-					return nil, nil, err
+					return err
 				}
 				for path, fn := range bindvols {
 					files[path] = fn
@@ -117,7 +137,13 @@ func GenerateDockerComposeFiles(cfg *ProjectConfig) (dcc DockerComposeConfig, fi
 		}
 	}
 
-	return dcc, files, nil
+	// If we haven't returned any errors it's safe to update the value.
+
+	cfg.composeConfig = dcc
+	cfg.filesToGenerate = files
+	cfg.Secrets = append(cfg.Secrets, secrets...)
+
+	return nil
 }
 
 func serviceConfig(config *ProjectConfig, service ServiceDef) (ServiceConfig, error) {
@@ -171,8 +197,8 @@ func serviceConfig(config *ProjectConfig, service ServiceDef) (ServiceConfig, er
 				break
 			}
 		}
-
 	}
+
 	// TODO: recurse
 	if includes, ok := result["include"].([]interface{}); ok {
 		delete(result, "include")
@@ -304,7 +330,13 @@ func mapMerge(target map[string]interface{}, source map[string]interface{}) map[
 				}
 			}
 		}
-		result[k] = v
+
+		// Break the reference for any maps that we copy over.
+		if vmap, ok := v.(map[string]interface{}); ok {
+			result[k] = mapMerge(map[string]interface{}{}, vmap)
+		} else {
+			result[k] = v
+		}
 	}
 	return result
 }

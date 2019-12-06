@@ -50,9 +50,6 @@ func prepare(object map[string]interface{}) (*ProjectConfig, error) {
 		return nil, err
 	}
 	prepared.ServiceDefinitions = append(prepared.ServiceDefinitions, loaded...)
-	if len(prepared.ServiceDefinitions) == 0 {
-		log.Println("[WARN] No services configured. Consider adding some with `service_files`.")
-	}
 
 	if UserFile != "" {
 		prepared.UserFile = UserFile

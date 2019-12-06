@@ -57,7 +57,7 @@ func processTemplate(format string, cfg *config.ProjectConfig, writer io.Writer)
 
 	funcMap := template.FuncMap{
 		"compose": func() map[string]interface{} {
-			dc, err := config.GenerateDockerComposeConfig(cfg)
+			dc, err := cfg.ComposeConfig()
 			if err != nil {
 				panic(err)
 			}

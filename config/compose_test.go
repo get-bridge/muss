@@ -23,7 +23,7 @@ func parseAndCompose(yaml string) (map[string]interface{}, *ProjectConfig, error
 		return nil, nil, err
 	}
 
-	dc, err := GenerateDockerComposeConfig(cfg)
+	dc, err := cfg.ComposeConfig()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -218,7 +218,7 @@ service_definitions:
         SECOND_BAR:
           exec: [echo, two]
 `,
-			`{services: {}, volumes: {}, version: '3.7'}`,
+			`{version: '3.7'}`,
 			"secrets as map or list",
 		)
 

@@ -17,6 +17,9 @@ type ProjectConfig struct {
 	Status                   *StatusConfig          `mapstructure:"status"`
 
 	Secrets []envLoader
+
+	composeConfig   map[string]interface{}
+	filesToGenerate FileGenMap
 }
 
 // NewProjectConfig returns new ProjectConfig

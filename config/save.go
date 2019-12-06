@@ -77,7 +77,7 @@ func generateFiles(cfg *ProjectConfig) {
 		return
 	}
 
-	dc, files, err := GenerateDockerComposeFiles(cfg)
+	dc, err := cfg.ComposeConfig()
 	if err != nil {
 		log.Fatalln("Error creating docker-compose config:\n", err)
 	}
@@ -113,6 +113,7 @@ func generateFiles(cfg *ProjectConfig) {
 	}
 
 	var wg sync.WaitGroup
+	files, _ := cfg.FilesToGenerate()
 	for path, fn := range files {
 		wg.Add(1)
 		go func(path string, fn FileGenFunc) {
