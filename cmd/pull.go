@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-
-	"gerrit.instructure.com/muss/config"
 )
 
 func newPullCommand() *cobra.Command {
@@ -14,8 +12,8 @@ func newPullCommand() *cobra.Command {
 `,
 		Args: cobra.ArbitraryArgs,
 		// TODO: ArgsInUseLine: "[service...]"
+		PreRun: configSavePreRun,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			config.Save()
 
 			// TODO: pull repos
 

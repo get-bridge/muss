@@ -9,9 +9,12 @@ var UserFile string
 var project *ProjectConfig
 
 // All returns the whole project config.
-func All() *ProjectConfig {
+func All() (*ProjectConfig, error) {
 	if project == nil {
-		load()
+		err := load()
+		if err != nil {
+			return nil, err
+		}
 	}
-	return project
+	return project, nil
 }

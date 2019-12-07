@@ -32,8 +32,14 @@ func TestConfigSave(t *testing.T) {
 					"exec": []string{"echo", "hi"},
 				},
 			})
-			assert.Equal(t, All().Status.Exec, []string{"echo", "hi"}, "has config")
-			generateFiles(All())
+
+			cfg, err := All()
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			assert.Equal(t, cfg.Status.Exec, []string{"echo", "hi"}, "has config")
+			generateFiles(cfg)
 			// still no compose file
 			assertNotExist(t, "docker-compose.yml")
 		})
@@ -104,7 +110,12 @@ func TestConfigSave(t *testing.T) {
 					},
 				},
 			}
-			ioutil.WriteFile(ProjectFile, yamlDump(cfg), 0644)
+
+			if yaml, err := yamlDump(cfg); err != nil {
+				t.Fatal(err)
+			} else {
+				ioutil.WriteFile(ProjectFile, yaml, 0644)
+			}
 
 			assertNotExist(t, "./foo")
 			assertNotExist(t, "./test-home/vol/file")

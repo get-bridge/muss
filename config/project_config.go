@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"log"
 )
 
 // ProjectConfig is a type for the parsed contents of the project config file.
@@ -31,7 +30,7 @@ func NewProjectConfig() *ProjectConfig {
 func NewProjectConfigFromMap(cfgMap map[string]interface{}) (*ProjectConfig, error) {
 	result := NewProjectConfig()
 	if err := mapToStruct(cfgMap, result); err != nil {
-		log.Println(err)
+		return nil, err
 	}
 	return result, nil
 }

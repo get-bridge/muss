@@ -1,15 +1,26 @@
 package cmd
 
 import (
+	"fmt"
+	"os"
 	"os/exec"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
+	"gerrit.instructure.com/muss/config"
 	"gerrit.instructure.com/muss/proc"
 )
 
 var dc = "docker-compose"
+
+func configSavePreRun(cmd *cobra.Command, argv []string) {
+	if err := config.Save(); err != nil {
+		fmt.Print(err)
+		// Abort command (without printing usage).
+		os.Exit(1)
+	}
+}
 
 func cmdDelegator(cmd *cobra.Command) *proc.Delegator {
 	return (&proc.Delegator{

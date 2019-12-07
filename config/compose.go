@@ -137,7 +137,11 @@ func (cfg *ProjectConfig) parseServiceDefinitions() (err error) {
 		}
 	}
 
-	files[DockerComposeFile] = fileGeneratorWithContent(cfg.composeFileBytes(dcc))
+	if yaml, err := cfg.composeFileBytes(dcc); err == nil {
+		files[DockerComposeFile] = fileGeneratorWithContent(yaml)
+	} else {
+		return err
+	}
 
 	// If we haven't returned any errors it's safe to update the value.
 
@@ -362,8 +366,12 @@ func mapKeys(m map[string]interface{}) []string {
 	return keys
 }
 
-func (cfg *ProjectConfig) composeFileBytes(dcc map[string]interface{}) []byte {
-	yamlBytes := yamlDump(dcc)
+func (cfg *ProjectConfig) composeFileBytes(dcc map[string]interface{}) ([]byte, error) {
+	yamlBytes, err := yamlDump(dcc)
+	if err != nil {
+		return nil, err
+	}
+
 	content := []byte(`#
 # THIS FILE IS GENERATED!
 #
@@ -379,5 +387,5 @@ func (cfg *ProjectConfig) composeFileBytes(dcc map[string]interface{}) []byte {
 	content = append(content, []byte("\n---\n")...)
 	content = append(content, yamlBytes...)
 
-	return content
+	return content, nil
 }

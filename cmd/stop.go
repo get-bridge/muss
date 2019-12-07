@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-
-	"gerrit.instructure.com/muss/config"
 )
 
 func newStopCommand() *cobra.Command {
@@ -15,8 +13,8 @@ func newStopCommand() *cobra.Command {
 They can be started again with "start".`,
 		Args: cobra.ArbitraryArgs,
 		// TODO: ArgsInUseLine: "[service...]"
+		PreRun: configSavePreRun,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			config.Save()
 			return DelegateCmd(
 				cmd,
 				dockerComposeCmd(cmd, args),

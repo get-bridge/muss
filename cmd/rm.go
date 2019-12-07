@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-
-	"gerrit.instructure.com/muss/config"
 )
 
 func newRmCommand() *cobra.Command {
@@ -18,8 +16,8 @@ can override this with "-v". To list all volumes, use "docker volume ls".
 Any data which is not in a volume will be lost.`,
 		Args: cobra.ArbitraryArgs,
 		// TODO: ArgsInUseLine: "[service...]"
+		PreRun: configSavePreRun,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			config.Save()
 			return DelegateCmd(
 				cmd,
 				dockerComposeCmd(cmd, args),

@@ -56,9 +56,9 @@ volumes). To prevent picking up changes, use the "--no-recreate" flag.
 If you want to force Compose to stop and recreate all containers, use the
 "--force-recreate" flag.
 `,
-		Args: cobra.ArbitraryArgs,
+		Args:   cobra.ArbitraryArgs,
+		PreRun: configSavePreRun,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			config.Save()
 
 			switch {
 			// TODO: global noANSI
@@ -109,6 +109,11 @@ func init() {
 }
 
 func runUpWithStatus(cmd *cobra.Command, args []string) error {
+	cfg, err := config.All()
+	if err != nil {
+		return err
+	}
+
 	pr, pw, err := os.Pipe()
 	if err != nil {
 		return err
@@ -133,7 +138,7 @@ func runUpWithStatus(cmd *cobra.Command, args []string) error {
 	// Setup a channel for status updates.
 	statusCh := make(chan string, 1)
 	statusCh <- "# muss"
-	cfg := config.All()
+
 	if cfg != nil && cfg.Status != nil && len(cfg.Status.Exec) > 0 {
 		go func() {
 			format := "# %s"

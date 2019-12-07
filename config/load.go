@@ -1,8 +1,8 @@
 package config
 
 import (
+	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"reflect"
 
@@ -12,31 +12,34 @@ import (
 
 // SetConfig sets the global config to the provided arg
 // (used internally for testing).
-func SetConfig(cfg map[string]interface{}) {
+func SetConfig(cfg map[string]interface{}) error {
 	if cfg == nil {
 		project = nil
-		return
+		return nil
 	}
 
 	var err error
 	project, err = prepare(cfg)
 	if err != nil {
-		log.Fatalln("Failed to process config:", err)
+		return fmt.Errorf("Failed to process config: %w", err)
 	}
+
+	return nil
 }
 
-func load() {
+func load() error {
 	// If there is no config file do the best you can
 	// (allow muss to wrap docker-compose without a config file).
 	if _, err := os.Stat(ProjectFile); err != nil && os.IsNotExist(err) {
-		return
+		return nil
 	}
 
 	object, err := readYamlFile(ProjectFile)
 	if err != nil {
-		log.Fatalf("Failed to read config file '%s': %s\n", ProjectFile, err)
+		return fmt.Errorf("Failed to read config file '%s': %w", ProjectFile, err)
 	}
-	SetConfig(object)
+
+	return SetConfig(object)
 }
 
 func prepare(object map[string]interface{}) (*ProjectConfig, error) {

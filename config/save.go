@@ -1,18 +1,23 @@
 package config
 
 import (
+	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path"
 	"sync"
 
+	multierror "github.com/hashicorp/go-multierror"
 	yaml "gopkg.in/yaml.v2"
 )
 
-// Save writes out configuration files to disk.
-func Save() {
-	generateFiles(All())
+// Save writes out configuration files to disk and returns any errors.
+func Save() error {
+	cfg, err := All()
+	if err != nil {
+		return err
+	}
+	return generateFiles(cfg)
 }
 
 // Assume that if a volume is pointing to an existing file they probably meant it.
@@ -77,38 +82,49 @@ func fileGeneratorWithContent(content []byte) FileGenFunc {
 	}
 }
 
-func generateFiles(cfg *ProjectConfig) {
+func generateFiles(cfg *ProjectConfig) error {
 	// If there is not project config file, there is nothing to do.
 	if cfg == nil {
-		return
+		return nil
 	}
 
 	files, err := cfg.FilesToGenerate()
 	if err != nil {
-		log.Fatalln("Error creating docker-compose config:\n", err)
+		return fmt.Errorf("Error creating docker-compose config: %w", err)
 	}
 
 	var wg sync.WaitGroup
+	var errs *multierror.Error
+	var errMux sync.Mutex
+
 	for path, fn := range files {
 		wg.Add(1)
 		go func(path string, fn FileGenFunc) {
 			defer wg.Done()
 			if err := fn(path); err != nil {
-				log.Fatalln("Failed to save file:", err)
+				errMux.Lock()
+				errs = multierror.Append(errs, err)
+				errMux.Unlock()
 			}
 		}(path, fn)
 	}
 	wg.Wait()
 
-	if err := loadEnvFromCmds(cfg.Secrets...); err != nil {
-		log.Fatalln("Failed to load secrets:", err)
+	if errs != nil && len(errs.Errors) > 0 {
+		return errs.ErrorOrNil()
 	}
+
+	if err := loadEnvFromCmds(cfg.Secrets...); err != nil {
+		return fmt.Errorf("Failed to load secrets: %w", err)
+	}
+
+	return nil
 }
 
-func yamlDump(object map[string]interface{}) []byte {
+func yamlDump(object map[string]interface{}) ([]byte, error) {
 	d, err := yaml.Marshal(object)
 	if err != nil {
-		log.Fatalln("yaml dump error:", err)
+		return nil, err
 	}
-	return d
+	return d, nil
 }

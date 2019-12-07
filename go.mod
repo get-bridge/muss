@@ -3,6 +3,7 @@ module gerrit.instructure.com/muss
 go 1.13
 
 require (
+	github.com/hashicorp/go-multierror v1.0.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/spf13/cobra v0.0.5

@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-
-	"gerrit.instructure.com/muss/config"
 )
 
 func newRunCommand() *cobra.Command {
@@ -44,8 +42,8 @@ Options:
 `,
 		Args:               cobra.ArbitraryArgs,
 		DisableFlagParsing: true,
+		PreRun:             configSavePreRun,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			config.Save()
 
 			// Pass --rm by default (allow --no-rm to disable).
 			rm := true

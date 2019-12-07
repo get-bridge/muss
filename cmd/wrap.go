@@ -7,7 +7,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"gerrit.instructure.com/muss/config"
 	"gerrit.instructure.com/muss/proc"
 )
 
@@ -29,8 +28,8 @@ Useful for testing project configuration, environment, and command execution.
 Usage: wrap [options] [COMMAND ARGS...]`,
 		Example: "  muss wrap bin/script args...",
 		Args:    cobra.ArbitraryArgs,
+		PreRun:  configSavePreRun,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			config.Save()
 
 			if useExec {
 				if len(shellCommands) > 0 {

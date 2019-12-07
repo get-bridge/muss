@@ -37,7 +37,8 @@ Template examples:
   '{{ range .service_definitions }}{{ range $k, $v := .configs }}{{ $k }}{{ "\n" }}{{ end }}{{end }}'
 `,
 		Run: func(cmd *cobra.Command, args []string) {
-			err := processTemplate(format, config.All(), cmd.OutOrStdout())
+			cfg, _ := config.All()
+			err := processTemplate(format, cfg, cmd.OutOrStdout())
 			// Print the error rather than returning it
 			// so that we don't print the whole help string for template errorrs.
 			if err != nil {

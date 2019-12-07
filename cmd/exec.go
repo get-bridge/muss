@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-
-	"gerrit.instructure.com/muss/config"
 )
 
 func newExecCommand() *cobra.Command {
@@ -32,8 +30,8 @@ Options:
 `,
 		Args:               cobra.ArbitraryArgs,
 		DisableFlagParsing: true,
+		PreRun:             configSavePreRun,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			config.Save()
 
 			return dockerComposeExec(cmd, args)
 		},

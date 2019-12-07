@@ -3,7 +3,6 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	"gerrit.instructure.com/muss/config"
 	"gerrit.instructure.com/muss/proc"
 )
 
@@ -24,8 +23,8 @@ Usage:
 `,
 		Args:               cobra.ArbitraryArgs,
 		DisableFlagParsing: true,
+		PreRun:             configSavePreRun,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			config.Save()
 
 			return proc.Exec(append([]string{"docker-compose"}, args...))
 		},
