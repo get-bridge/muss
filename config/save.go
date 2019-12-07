@@ -1,7 +1,7 @@
 package config
 
 import (
-	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -71,49 +71,24 @@ func touch(file string) error {
 	return nil
 }
 
+func fileGeneratorWithContent(content []byte) FileGenFunc {
+	return func(file string) error {
+		return ioutil.WriteFile(file, content, 0666)
+	}
+}
+
 func generateFiles(cfg *ProjectConfig) {
 	// If there is not project config file, there is nothing to do.
 	if cfg == nil {
 		return
 	}
 
-	dc, err := cfg.ComposeConfig()
+	files, err := cfg.FilesToGenerate()
 	if err != nil {
 		log.Fatalln("Error creating docker-compose config:\n", err)
 	}
 
-	// If there's no compose config don't write the file.
-	// If there is an existing docker-compose.yml it will get used
-	// when muss delegates to docker-compose.
-	if dc != nil {
-		composeBytes := yamlDump(dc)
-
-		if dc, err := os.Create(DockerComposeFile); err == nil {
-			content := []byte(`#
-# THIS FILE IS GENERATED!
-#
-# To add new service definition files edit ` + ProjectFile + `.
-#
-`)
-
-			if cfg.UserFile != "" {
-				content = append(content,
-					[]byte(fmt.Sprintf("# To configure the services you want to use edit %v.\n#\n", cfg.UserFile))...)
-			}
-
-			content = append(content, []byte("\n---\n")...)
-			content = append(content, composeBytes...)
-
-			if _, err := dc.Write(content); err != nil {
-				log.Fatalln("Error writing to file:", err)
-			}
-		} else {
-			log.Fatalln("Failed to open file for writing:", err)
-		}
-	}
-
 	var wg sync.WaitGroup
-	files, _ := cfg.FilesToGenerate()
 	for path, fn := range files {
 		wg.Add(1)
 		go func(path string, fn FileGenFunc) {

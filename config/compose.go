@@ -44,7 +44,7 @@ func (cfg *ProjectConfig) ComposeConfig() (map[string]interface{}, error) {
 	return cfg.composeConfig, nil
 }
 
-// FilesToGenerate returns a FileGenMap of additional files to write.
+// FilesToGenerate returns a FileGenMap of files to write.
 func (cfg *ProjectConfig) FilesToGenerate() (FileGenMap, error) {
 	if err := cfg.loadComposeConfig(); err != nil {
 		return nil, err
@@ -136,6 +136,8 @@ func (cfg *ProjectConfig) parseServiceDefinitions() (err error) {
 			}
 		}
 	}
+
+	files[DockerComposeFile] = fileGeneratorWithContent(cfg.composeFileBytes(dcc))
 
 	// If we haven't returned any errors it's safe to update the value.
 
@@ -358,4 +360,24 @@ func mapKeys(m map[string]interface{}) []string {
 		}
 	}
 	return keys
+}
+
+func (cfg *ProjectConfig) composeFileBytes(dcc map[string]interface{}) []byte {
+	yamlBytes := yamlDump(dcc)
+	content := []byte(`#
+# THIS FILE IS GENERATED!
+#
+# To add new service definition files edit ` + ProjectFile + `.
+#
+`)
+
+	if cfg.UserFile != "" {
+		content = append(content,
+			[]byte(fmt.Sprintf("# To configure the services you want to use edit %v.\n#\n", cfg.UserFile))...)
+	}
+
+	content = append(content, []byte("\n---\n")...)
+	content = append(content, yamlBytes...)
+
+	return content
 }
