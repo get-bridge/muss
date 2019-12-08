@@ -1,6 +1,6 @@
 module gerrit.instructure.com/muss
 
-go 1.12
+go 1.13
 
 require (
 	github.com/mitchellh/go-homedir v1.1.0

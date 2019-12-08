@@ -1,4 +1,4 @@
-docker_image = "golang:1.12"
+docker_image = "golang:1.13"
 docker_volume = "muss_go_mods"
 
 def run(cmd) {
