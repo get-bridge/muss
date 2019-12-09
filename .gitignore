@@ -1,2 +1,3 @@
-docker-compose.yml
+/docker-compose.yml
+/testdata/docker-compose.yml
 muss.user.yaml

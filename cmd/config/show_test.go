@@ -1,6 +1,8 @@
 package config
 
 import (
+	"os"
+	"path"
 	"strings"
 	"testing"
 
@@ -10,6 +12,8 @@ import (
 )
 
 func testShowCommand(t *testing.T, args []string) (string, string) {
+	t.Helper()
+
 	var stdout, stderr strings.Builder
 
 	cmd := newShowCommand()
@@ -25,6 +29,8 @@ func testShowCommand(t *testing.T, args []string) (string, string) {
 }
 
 func showOut(t *testing.T, format string) string {
+	t.Helper()
+
 	stdout, stderr := testShowCommand(t, []string{"--format", format})
 
 	if stderr != "" {
@@ -35,6 +41,8 @@ func showOut(t *testing.T, format string) string {
 }
 
 func showErr(t *testing.T, format string) string {
+	t.Helper()
+
 	stdout, stderr := testShowCommand(t, []string{"--format", format})
 
 	if stdout != "" {
@@ -117,6 +125,22 @@ func TestConfigShow(t *testing.T) {
 			"bar",
 			showOut(t, `{{ range .user.services }}{{ .config }}{{ end }}`),
 			".user (key)")
+	})
+
+	t.Run("without service defs", func(t *testing.T) {
+		if dir, err := os.Getwd(); err != nil {
+			t.Fatal(err)
+		} else {
+			defer os.Chdir(dir)
+			os.Chdir(path.Join(dir, "..", "..", "testdata", "no-muss"))
+		}
+
+		config.SetConfig(nil)
+
+		assert.Equal(t,
+			"a1.alpine\na2.alpine\n",
+			showOut(t, `{{ range $k, $v := compose.services }}{{ $k }}{{ "." }}{{ $v.image }}{{ "\n" }}{{ end }}`),
+			"compose config without service defs")
 	})
 
 	t.Run("empty config", func(t *testing.T) {

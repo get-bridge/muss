@@ -1,0 +1,6 @@
+version: '3'
+services:
+  a1:
+    image: alpine
+  a2:
+    image: alpine

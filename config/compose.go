@@ -24,7 +24,11 @@ var DockerComposeFile = "docker-compose.yml"
 func (cfg *ProjectConfig) loadComposeConfig() error {
 	if cfg.composeConfig == nil {
 		if len(cfg.ServiceDefinitions) == 0 {
-			fmt.Println("[WARN] No services configured. Consider adding some with `service_files`.")
+			dcc, err := loadStaticComposeConfig()
+			if err != nil {
+				return err
+			}
+			cfg.composeConfig = dcc
 		} else {
 			err := cfg.parseServiceDefinitions()
 			if err != nil {
@@ -388,4 +392,15 @@ func (cfg *ProjectConfig) composeFileBytes(dcc map[string]interface{}) ([]byte, 
 	content = append(content, yamlBytes...)
 
 	return content, nil
+}
+
+func loadStaticComposeConfig() (map[string]interface{}, error) {
+	m, err := readYamlFile(DockerComposeFile)
+	if err != nil {
+		// Don't abort config loading if this doesn't exist.
+		if !os.IsNotExist(err) {
+			return nil, err
+		}
+	}
+	return m, nil
 }
