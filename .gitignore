@@ -1,3 +1,4 @@
+/build/
 /docker-compose.yml
 /testdata/docker-compose.yml
 muss.user.yaml

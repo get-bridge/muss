@@ -1,0 +1,21 @@
+language: go
+
+go:
+  - 1.x
+
+env:
+  global:
+    - GO111MODULE=on
+
+deploy:
+  provider: releases
+  api_key:
+    secure: "v/iJArRWOHpzPssSgEBldwtXHu+WKCr165sYS4wh2qylQClJR/uJ3GWHLCuoKyVzMySO0z8Pw3f3V+cP2Lg+Se7+2KAF64Rx1BitmU4TWnZexErmXlZiKnLwbl8W7fYNhAHDMIBFCBR4+dCfZa1q1G9ql6YLRMOkOCu8QnWHs9M7xptNO3klNFSBFeg+YyytLLvFsUghNT1/Eb2QvQWbDfZBWc2AEG7rORLuHcD1hK4EnvsOhGyD7MEIfTk7O2VT/xLeqLoWrGKVt3HYtlNGd8jbIa9N2MRl0FQQjtKvCuAFxGxhHiolTpaSC5rDcHgj1WlUJGziykpBTOZC5JKRH3s4UWMAPwKDaFFjuA+VKpdyKjB6viQZPR6OWObizIZVRzAerGwJEYDUzNhjA0MYkAK7LinudfA/gkjlgndEc1WDl7ewg8/5rX77INUW2/aCl2WBF+5tnUJnfclHYbCmnzldPEPyu5atGApAXSx4J6nfUHHCJssyaldvNjr09IPUl5JY4nWrTqXz76M9odyHDrWveO33cGajgsoDiFx8hrAInJ/x3WAS15H3lJ8OlkcDWxXVyu604LgQtp9ECIeQHy3cXCYMWTtn/vD/HGaEFe1tE4/5bnHW+VWlWTKKRR1kPNfhrU5dIWEkzRSL+5DFRZ0X1bndPqvOLCeK1P939tM="
+  file_glob: true
+  file:
+    - build/muss*.zip*
+    - build/SHA256SUMS
+  overwrite: true # Ensure the binaries match the signatures.
+  skip_cleanup: true
+  on:
+    tags: true

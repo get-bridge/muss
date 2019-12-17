@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/instructure/muss.svg?branch=master)](https://travis-ci.org/instructure/muss)
+
 # muss
 
 Definition:

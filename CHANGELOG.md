@@ -1,0 +1,10 @@
+# v0.2 - UNRELEASED
+
+- Enable command to add fixed status line to bottom of "up" output.
+- Add start, stop, restart, and rm commands.
+- Use existing docker-compose.yml if there are no service defs.
+- Improve signal handling.
+
+# v0.1 - 2019-11-04
+
+Initial release
