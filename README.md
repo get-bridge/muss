@@ -63,13 +63,16 @@ to start all the services and type Ctrl-C to shut it down.
       logs        View output from services
       ps          List containers
       pull        Pull the latest images for services
+      restart     Restart services
+      rm          Remove stopped containers
       run         Run a one-off command
+      start       Start services
+      stop        Stop services
       up          Create and start containers
       wrap        Execute arbitrary commands
 
     Flags:
-          --config string   config file (default is muss.yaml)
-      -h, --help            help for muss
+      -h, --help   help for muss
 
     Use "muss [command] --help" for more information about a command.
 
