@@ -1,4 +1,4 @@
-# v0.2 - UNRELEASED
+# v0.2 - 2019-12-18
 
 - Enable command to add fixed status line to bottom of "up" output.
 - Add start, stop, restart, and rm commands.
