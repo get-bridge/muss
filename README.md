@@ -27,7 +27,12 @@ Projects (and their dependent services) can be configured
 in a familiar style through a series of yaml files.
 
 
-# Installing, Testing, etc
+# Installation
+
+    brew tap instructure/muss
+    brew install muss
+
+# Building, Testing, etc
 
 `muss` is a CLI written in go and can be built with the usual go commands:
 
