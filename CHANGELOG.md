@@ -1,3 +1,7 @@
+# v0.3 - Unreleased
+
+- Add --no-status option for "up"
+
 # v0.2 - 2019-12-18
 
 - Enable command to add fixed status line to bottom of "up" output.

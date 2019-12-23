@@ -40,6 +40,12 @@ func dcFlagsFromCmd(cmd *cobra.Command) []string {
 
 	// Determine which flags were set and pass them on.
 	cmd.Flags().Visit(func(flag *pflag.Flag) {
+		if flag.Annotations != nil {
+			if mussOnly := flag.Annotations["muss-only"]; len(mussOnly) == 1 && mussOnly[0] == "true" {
+				return
+			}
+		}
+
 		var arg string
 		// If dc only defines the shorthand make sure we send it that way.
 		// see also https://github.com/spf13/pflag/issues/213

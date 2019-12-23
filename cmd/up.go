@@ -80,9 +80,8 @@ If you want to force Compose to stop and recreate all containers, use the
 
 	cmd.Flags().SortFlags = false
 	// muss only
-	// TODO: need to annotate custom muss flags so that we don't pass them to
-	// docker-compose.
-	// cmd.Flags().BoolVarP(&opts.noStatus, "no-status", "", false, "Do not show muss status at the bottom of the log output.")
+	cmd.Flags().BoolVarP(&opts.noStatus, "no-status", "", false, "Do not show muss status at the bottom of the log output.")
+	cmd.Flags().SetAnnotation("no-status", "muss-only", []string{"true"})
 
 	cmd.Flags().BoolVarP(&opts.detach, "detach", "d", false, "Detached mode: Run containers in the background,\nprint new container names. Incompatible with\n--abort-on-container-exit.")
 	cmd.Flags().BoolVarP(&opts.noColor, "no-color", "", false, "Produce monochrome output.")

@@ -14,6 +14,7 @@ func TestUpCommand(t *testing.T) {
 	withTestPath(t, func(*testing.T) {
 		t.Run("all args pass through", func(*testing.T) {
 			stdout, stderr, err := testCmdBuilder(newUpCommand, []string{
+				"--no-status",
 				"-d",
 				"--no-color",
 				"--quiet-pull",
@@ -59,13 +60,12 @@ svc
 			assert.Equal(t, expOut, stdout)
 		})
 
-		t.Run("up with args that disable status", func(*testing.T) {
+		t.Run("up without starting in foreground", func(*testing.T) {
 			os.Setenv("MUSS_TEST_UP_LOGS", "1")
 			defer os.Unsetenv("MUSS_TEST_UP_LOGS")
 
 			config.SetConfig(nil)
 
-			// TODO: --no-status
 			args := []string{"-d", "--no-start"}
 
 			for _, arg := range args {
@@ -77,6 +77,21 @@ svc
 				assert.Equal(t, "", stderr)
 				assert.Equal(t, expOut, stdout)
 			}
+		})
+
+		t.Run("up --no-status", func(*testing.T) {
+			os.Setenv("MUSS_TEST_UP_LOGS", "1")
+			defer os.Unsetenv("MUSS_TEST_UP_LOGS")
+
+			config.SetConfig(nil)
+
+			stdout, stderr, err := testCmdBuilder(newUpCommand, []string{"--no-status", "hoge", "piyo"})
+
+			expOut := "log\n"
+
+			assert.Nil(t, err)
+			assert.Equal(t, "", stderr)
+			assert.Equal(t, expOut, stdout)
 		})
 
 		t.Run("up without muss.yaml", func(*testing.T) {
