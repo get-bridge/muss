@@ -32,13 +32,15 @@ in a familiar style through a series of yaml files.
     brew tap instructure/muss
     brew install muss
 
+
 # Building, Testing, etc
 
-`muss` is a CLI written in go and can be built with the usual go commands:
+`muss` is a CLI written in go.
 
-`go install` to install it into your `$GOPATH`
+`make install` to install it into your `$GOPATH`.
 
-`go test ./...` to test all of the included go packages.
+You can use `make test` to test all of the included go packages
+or you can run any `go` commands directly (`go test ./cmd`).
 
 
 # Usage
@@ -74,6 +76,7 @@ to start all the services and type Ctrl-C to shut it down.
       start       Start services
       stop        Stop services
       up          Create and start containers
+      version     Show version information
       wrap        Execute arbitrary commands
 
     Flags:

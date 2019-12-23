@@ -7,6 +7,13 @@ if [ "1" = "$MUSS_TEST_UP_LOGS" ] && [ "$1" = "up" ]; then
 fi
 
 echo std err >&2
+
+case "$1" in
+  version)
+    echo fake
+    exit;;
+esac
+
 echo "docker-compose"
 for i in "$@"; do
   echo "$i"

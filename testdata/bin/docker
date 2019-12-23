@@ -1,0 +1,11 @@
+#!/bin/sh
+
+if [ "$MUSS_TEST_DOCKER_VERSION_ERROR" = 1 ]; then
+  echo some errors >&2
+  exit 2
+fi
+
+echo "docker"
+for i in "$@"; do
+  printf "%s\n" "$i"
+done

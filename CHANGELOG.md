@@ -1,5 +1,6 @@
 # v0.3 - Unreleased
 
+- Add "version" command
 - Ensure containers are stopped when "up" is interrupted
 - Add --no-status option for "up"
 

@@ -88,7 +88,7 @@ func (e *envCmd) Value() ([]byte, error) {
 	cmd := exec.Command(e.exec[0], e.exec[1:]...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = &stdout
-	// Pass stderr for to show password prompts (or any problems).
+	// Pass stderr to show password prompts (or any problems).
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
