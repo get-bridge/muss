@@ -1,5 +1,6 @@
 # v0.3 - Unreleased
 
+- Ensure containers are stopped when "up" is interrupted
 - Add --no-status option for "up"
 
 # v0.2 - 2019-12-18

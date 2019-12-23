@@ -60,6 +60,40 @@ svc
 			assert.Equal(t, expOut, stdout)
 		})
 
+		t.Run("stop all", func(*testing.T) {
+			stdout, stderr, err := testCmdBuilder(newUpCommand, []string{})
+
+			expOut := term.AnsiEraseToEnd +
+				term.AnsiReset + "# muss" + term.AnsiReset + term.AnsiStart +
+				term.AnsiEraseToEnd + "docker-compose\n" +
+				term.AnsiReset + "# muss" + term.AnsiReset + term.AnsiStart +
+				term.AnsiEraseToEnd + "up\n" +
+				term.AnsiReset + "# muss" + term.AnsiReset + term.AnsiStart +
+				"docker-compose\nstop\n"
+
+			assert.Nil(t, err)
+			assert.Equal(t, "std err\nstd err\n", stderr)
+			assert.Equal(t, expOut, stdout)
+		})
+
+		t.Run("stop selected", func(*testing.T) {
+			stdout, stderr, err := testCmdBuilder(newUpCommand, []string{"--no-status", "hoge", "piyo"})
+
+			expOut := `docker-compose
+up
+hoge
+piyo
+docker-compose
+stop
+hoge
+piyo
+`
+
+			assert.Nil(t, err)
+			assert.Equal(t, "std err\nstd err\n", stderr)
+			assert.Equal(t, expOut, stdout)
+		})
+
 		t.Run("up without starting in foreground", func(*testing.T) {
 			os.Setenv("MUSS_TEST_UP_LOGS", "1")
 			defer os.Unsetenv("MUSS_TEST_UP_LOGS")
@@ -87,10 +121,10 @@ svc
 
 			stdout, stderr, err := testCmdBuilder(newUpCommand, []string{"--no-status", "hoge", "piyo"})
 
-			expOut := "log\n"
+			expOut := "log\ndocker-compose\nstop\nhoge\npiyo\n"
 
 			assert.Nil(t, err)
-			assert.Equal(t, "", stderr)
+			assert.Equal(t, "std err\n", stderr)
 			assert.Equal(t, expOut, stdout)
 		})
 
@@ -106,10 +140,10 @@ svc
 				term.AnsiReset + "# muss" + term.AnsiReset + term.AnsiStart +
 				term.AnsiEraseToEnd + "log\n" +
 				term.AnsiReset + "# muss" + term.AnsiReset + term.AnsiStart +
-				""
+				"docker-compose\nstop\n"
 
 			assert.Nil(t, err)
-			assert.Equal(t, "", stderr)
+			assert.Equal(t, "std err\n", stderr)
 			assert.Equal(t, expOut, stdout)
 		})
 
@@ -132,10 +166,10 @@ svc
 				term.AnsiEraseToEnd + "log\n" +
 				term.AnsiReset + "# muss" + term.AnsiReset + term.AnsiStart +
 				term.AnsiEraseToEnd + term.AnsiReset + "# ok!" + term.AnsiReset + term.AnsiStart +
-				""
+				"docker-compose\nstop\n"
 
 			assert.Nil(t, err)
-			assert.Equal(t, "", stderr)
+			assert.Equal(t, "std err\n", stderr)
 			assert.Equal(t, expOut, stdout)
 		})
 
@@ -159,10 +193,10 @@ svc
 				term.AnsiEraseToEnd + "log\n" +
 				term.AnsiReset + "# muss" + term.AnsiReset + term.AnsiStart +
 				term.AnsiEraseToEnd + term.AnsiReset + status + term.AnsiReset + term.AnsiStart + term.AnsiUp +
-				""
+				"docker-compose\nstop\n"
 
 			assert.Nil(t, err)
-			assert.Equal(t, "", stderr)
+			assert.Equal(t, "std err\n", stderr)
 			assert.Equal(t, expOut, stdout)
 		})
 

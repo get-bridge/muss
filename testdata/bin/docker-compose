@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if [ "1" = "$MUSS_TEST_UP_LOGS" ]; then
+if [ "1" = "$MUSS_TEST_UP_LOGS" ] && [ "$1" = "up" ]; then
   echo log
   sleep 2 # wait long enough for status to be added
   exit 0

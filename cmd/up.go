@@ -58,23 +58,38 @@ If you want to force Compose to stop and recreate all containers, use the
 `,
 		Args:   cobra.ArbitraryArgs,
 		PreRun: configSavePreRun,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+
+			stopAfter := true
 
 			switch {
 			// TODO: global noANSI
 			case opts.detach:
 				fallthrough
 			case opts.noStart:
+				stopAfter = false
 				fallthrough
 			case opts.noStatus:
-				return DelegateCmd(
+				err = DelegateCmd(
 					cmd,
 					dockerComposeCmd(cmd, args),
 				)
 			default:
+				err = runUpWithStatus(cmd, args)
 			}
 
-			return runUpWithStatus(cmd, args)
+			// When you interrupt "up" it will usually stop all the services
+			// but sometimes dc just aborts.  If we call stop afterwards it will
+			// do nothing if already stopped or stop what we started if it aborts.
+			if err == nil && stopAfter {
+				err = DelegateCmd(
+					cmd,
+					// Pass args so that we only stop services that this command started.
+					exec.Command("docker-compose", append([]string{"stop"}, args...)...),
+				)
+			}
+
+			return
 		},
 	}
 
