@@ -1,5 +1,6 @@
 version: '3.7'
 services:
+
   web:
     build: ./
     command: [web]
@@ -12,6 +13,9 @@ services:
     volumes:
       - 'deps:/deps'
       - './testdata:/app'
+    stdin_open: true
+    tty: true
+
   work:
     build: ./
     command: [work]
@@ -25,6 +29,9 @@ services:
     volumes:
       - 'deps:/deps'
       - './testdata:/app'
+    stdin_open: true
+    tty: true
+
   ms:
     build: ../repo
     entrypoint: [/entrypoint]
@@ -32,6 +39,7 @@ services:
       - './testdata/entrypoint:/entrypoint'
       - 'msdeps:/deps'
     command: [ms]
+
   store:
     image: alpine
     volumes:
@@ -47,6 +55,7 @@ services:
         consistency: cached
     entrypoint: [/entrypoint]
     command: [store]
+
 volumes:
   deps: {}
   msdeps: {}

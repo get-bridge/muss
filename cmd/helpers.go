@@ -35,11 +35,19 @@ func DelegateCmd(cmd *cobra.Command, commands ...*exec.Cmd) (err error) {
 	return cmdDelegator(cmd).Delegate(commands...)
 }
 
-func dcFlagsFromCmd(cmd *cobra.Command) []string {
+type flagDumper struct {
+	visitAll       bool
+	showFalseBools bool
+}
+
+func (f flagDumper) fromCmd(cmd *cobra.Command) []string {
 	args := make([]string, 0)
 
 	// Determine which flags were set and pass them on.
-	cmd.Flags().Visit(func(flag *pflag.Flag) {
+	flagToString := func(flag *pflag.Flag) {
+		if flag.Name == "help" {
+			return
+		}
 		if flag.Annotations != nil {
 			if mussOnly := flag.Annotations["muss-only"]; len(mussOnly) == 1 && mussOnly[0] == "true" {
 				return
@@ -57,6 +65,13 @@ func dcFlagsFromCmd(cmd *cobra.Command) []string {
 
 		switch flag.Value.Type() {
 		case "bool":
+			val := flag.Value.String()
+			if val == "false" {
+				if !f.showFalseBools {
+					return
+				}
+				arg += "=" + val
+			}
 			// just the name
 		case "int", "string":
 			arg += "=" + flag.Value.String()
@@ -65,13 +80,23 @@ func dcFlagsFromCmd(cmd *cobra.Command) []string {
 		}
 
 		args = append(args, arg)
-	})
+	}
+
+	if f.visitAll {
+		cmd.Flags().VisitAll(flagToString)
+	} else {
+		cmd.Flags().Visit(flagToString)
+	}
 
 	return args
 }
 
+func dockerCmd(args ...string) *exec.Cmd {
+	return exec.Command("docker", args...)
+}
+
 func dockerComposeArgs(cmd *cobra.Command, args []string) []string {
-	flags := dcFlagsFromCmd(cmd)
+	flags := (flagDumper{}).fromCmd(cmd)
 
 	cmdargs := make([]string, 1, 1+len(flags)+len(args))
 	cmdargs[0] = cmd.CalledAs()
@@ -87,4 +112,20 @@ func dockerComposeCmd(cmd *cobra.Command, args []string) *exec.Cmd {
 
 func dockerComposeExec(cmd *cobra.Command, args []string) error {
 	return proc.Exec(append([]string{dc}, dockerComposeArgs(cmd, args)...))
+}
+
+func dockerContainerID(service string) (string, error) {
+	cid, _, err := proc.CmdOutput("docker-compose", "ps", "-q", service)
+
+	errorMessage := fmt.Sprintf("failed to get container id for %s", service)
+
+	if err != nil {
+		return "", fmt.Errorf("%s: %w", errorMessage, err)
+	}
+
+	if cid == "" {
+		return "", fmt.Errorf("%s", errorMessage)
+	}
+
+	return cid, nil
 }

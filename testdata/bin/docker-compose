@@ -8,8 +8,11 @@ fi
 
 echo std err >&2
 
-case "$1" in
-  version)
+case "$*" in
+  ps\ -q\ *)
+    echo "some:$3:cid"
+    exit;;
+  version*)
     echo fake
     exit;;
 esac

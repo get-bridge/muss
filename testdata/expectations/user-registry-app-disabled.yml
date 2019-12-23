@@ -1,11 +1,13 @@
 version: '3.7'
 services:
+
   ms:
     image: alpine
     entrypoint: [/entrypoint]
     volumes:
       - './testdata/entrypoint:/entrypoint'
     command: [ms]
+
   store:
     image: alpine
     volumes:
@@ -21,5 +23,6 @@ services:
         consistency: cached
     entrypoint: [/entrypoint]
     command: [store]
+
 volumes:
   storedata: {}

@@ -61,6 +61,7 @@ to start all the services and type Ctrl-C to shut it down.
       muss [command]
 
     Available Commands:
+      attach      Attach local stdio to a running container
       build       Build or rebuild services
       config      muss configuration
       dc          Call aribtrary docker-compose commands

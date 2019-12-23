@@ -13,6 +13,9 @@ configs:
         command: [nope]
         volumes:
           - 'deps:/deps'
+        # Allow attaching.
+        stdin_open: true
+        tty: true
       work: *w1
 
   _base_frd:
