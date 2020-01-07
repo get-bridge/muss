@@ -1,4 +1,4 @@
-# v0.3 - Unreleased
+# v0.3 - 2020-01-07
 
 - Add "attach" command
 - Add "version" command
