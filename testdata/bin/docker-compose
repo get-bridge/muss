@@ -11,6 +11,9 @@ echo std err >&2
 case "$*" in
   ps\ -q\ *)
     echo "some:$3:cid"
+    if [ "1" = "$MUSS_TEST_PS_SCALE" ]; then
+      echo "second:$3:cid"
+    fi
     exit;;
   version*)
     echo fake
