@@ -1,4 +1,4 @@
-# v0.4 - Unreleased
+# v0.4 - 2020-01-08
 
 - Add --index argument to "attach" command for use when a service is scaled
   (similar to the "exec" command)
