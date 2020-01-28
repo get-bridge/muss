@@ -1,3 +1,7 @@
+# v0.5 - Unreleased
+
+- Improve error output and exit codes.
+
 # v0.4 - 2020-01-08
 
 - Add --index argument to "attach" command for use when a service is scaled

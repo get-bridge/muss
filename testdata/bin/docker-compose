@@ -1,5 +1,9 @@
 #!/bin/sh
 
+if [ -n "$MUSS_TEST_DC_ERROR" ]; then
+  exit "$MUSS_TEST_DC_ERROR"
+fi
+
 if [ "1" = "$MUSS_TEST_UP_LOGS" ] && [ "$1" = "up" ]; then
   echo log
   sleep 2 # wait long enough for status to be added

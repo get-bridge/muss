@@ -9,5 +9,5 @@ import (
 
 func main() {
 	proc.EnableExec()
-	os.Exit(cmd.Execute())
+	os.Exit(cmd.Execute(os.Args[1:]))
 }

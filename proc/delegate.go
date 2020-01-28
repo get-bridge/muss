@@ -32,15 +32,15 @@ func (d *Delegator) Delegate(commands ...*exec.Cmd) (err error) {
 		return nil
 	}
 
-	cmdch := make(chan *exec.Cmd, len(commands))
+	cmdch := make(chan error, len(commands))
 	for _, cmd := range commands {
 		cmd.Stdin = d.Stdin
 		cmd.Stdout = d.Stdout
 		cmd.Stderr = d.Stderr
 
 		go func(cmd *exec.Cmd) {
-			cmd.Run()
-			cmdch <- cmd
+			cmdErr := cmd.Run()
+			cmdch <- cmdErr
 		}(cmd)
 	}
 
@@ -70,8 +70,16 @@ func (d *Delegator) Delegate(commands ...*exec.Cmd) (err error) {
 			// Go back to the loop and wait for the commands to finish.
 			continue
 
-		case <-cmdch:
+		case cmdErr := <-cmdch:
 			finished++
+
+			// So far we only delegate to one command at time.
+			// If we ever do multiple we might want to return a value
+			// that can link the error to the command it came from.
+			if cmdErr != nil && err == nil {
+				err = cmdErr
+			}
+
 			if finished == len(commands) {
 				return
 			}

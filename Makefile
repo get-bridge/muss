@@ -27,7 +27,8 @@ release:
 	done; \
 	(cd build && sha256sum *.zip > SHA256SUMS)
 
-test:
+# Include "version" as a basic smoke test.
+test: version
 	go test -v ./...
 
 version:

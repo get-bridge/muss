@@ -42,7 +42,7 @@ func TestWrapCommand(t *testing.T) {
 			stdout, stderr, err := testCmdBuilder(newWrapCommand, []string{
 				"-s", "/bin/sh",
 				"-c", "out () { sleep 1; echo c >&2; }; trap out TERM; sleep 5",
-				"-c", `$0 -c "out () { sleep 1; echo a; }; trap out TERM; sleep 6 & wait" & pids=$!; $0 -c "out () { sleep 2; echo b; }; trap out TERM; sleep 7 & wait" & pids="$pids $!"; all () { kill -s TERM $pids; wait; }; trap all TERM; sleep 8 & wait`,
+				"-c", `$0 -c "out () { sleep 1; echo a; }; trap out TERM; sleep 6 & wait" & pids=$!; $0 -c "out () { sleep 2; echo b; }; trap out TERM; sleep 7 & wait" & pids="$pids $!"; all () { kill -s TERM $pids; wait; }; trap all TERM; sleep 8 & wait; exit 0`,
 			})
 
 			expOut := "a\nb\n"
