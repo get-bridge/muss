@@ -1,5 +1,6 @@
 # v0.5 - Unreleased
 
+- Provide friendlier error messages for registry authentication errors.
 - Improve error output and exit codes.
 
 # v0.4 - 2020-01-08

@@ -1,15 +1,19 @@
 package cmd
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
+	"regexp"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
 	"gerrit.instructure.com/muss/config"
 	"gerrit.instructure.com/muss/proc"
+	"gerrit.instructure.com/muss/term"
 )
 
 var dc = "docker-compose"
@@ -128,4 +132,151 @@ func dockerContainerID(service string) (string, error) {
 	}
 
 	return cid, nil
+}
+
+type dcErrorFilter struct {
+	*proc.Pipe
+	messages     []string
+	readerDoneCh chan bool
+}
+
+func newDCErrorFilter() proc.StreamFilter {
+	return &dcErrorFilter{
+		readerDoneCh: make(chan bool, 1),
+		Pipe:         &proc.Pipe{},
+	}
+}
+
+var rePullingImage = regexp.MustCompile(`^Pulling (\S+) \((?:https?://)?([^/]+)`)
+var reGetNoBasicAuth = regexp.MustCompile(`Get (?:https?://)?([^/]+)\S+?: no basic auth credentials`)
+var reParsingHTTP403 = regexp.MustCompile(`(?:Service '(\S+)' failed to build:\s+|for (\S+)\s+)?error parsing HTTP 403 response body: unexpected end of JSON input: ""`)
+var reNoStoredCredential = regexp.MustCompile(`No stored credential for ([^"]+)`)
+
+func (f *dcErrorFilter) Start(doneCh chan bool) {
+	reader := f.Reader()
+	writer := f.Writer()
+	f.messages = make([]string, 0)
+
+	// Collect registries that have login errors so that at the end we only print
+	// once for each registry, and only print "unknown registry" if we couldn't
+	// identify any specific ones.
+	// The output for `dc pull` with a 403 will show the error once with
+	// each service name and then print them all again without.
+	unknownRegistryLogin := false
+	registriesForLogin := make([]string, 0)
+
+	var lastRegistry, lastService string
+
+	go func() {
+		if f, ok := reader.(io.ReadCloser); ok {
+			defer f.Close()
+		}
+		scanner := bufio.NewScanner(reader)
+		scanner.Split(term.ScanLinesOrAnsiMovements)
+		for scanner.Scan() {
+			line := scanner.Bytes()
+			length := len(line)
+			// Only do the regexp matching for full lines.
+			if length > 0 && line[length-1] == '\n' {
+
+				if match := rePullingImage.FindSubmatch(line); match != nil {
+					lastService = string(match[1])
+					lastRegistry = string(match[2])
+				} else if match := reNoStoredCredential.FindSubmatch(line); match != nil {
+					registriesForLogin = append(registriesForLogin, string(match[1]))
+				} else if match := reGetNoBasicAuth.FindSubmatch(line); match != nil {
+					registriesForLogin = append(registriesForLogin, string(match[1]))
+				} else if match := reParsingHTTP403.FindSubmatch(line); match != nil {
+					registry := lastRegistry
+					if len(match[1]) > 0 {
+						registry = registryFromImage(dcImageForService(string(match[1])))
+					} else if len(match[2]) > 0 {
+						registry = registryFromImage(dcImageForService(string(match[2])))
+					} else if lastRegistry == "" && lastService != "" {
+						registry = registryFromImage(dcImageForService(lastService))
+					}
+					if registry == "" {
+						unknownRegistryLogin = true
+					} else {
+						registriesForLogin = append(registriesForLogin, registry)
+					}
+				} else {
+					lastService = ""
+					lastRegistry = ""
+				}
+
+			}
+			// Propagate to STDERR.
+			writer.Write(line)
+		}
+
+		loginMessageFormat := "You may need to login to %s"
+		if len(registriesForLogin) > 0 {
+			for _, registry := range registriesForLogin {
+				f.messages = appendOnce(f.messages, fmt.Sprintf(loginMessageFormat, registry))
+			}
+		} else if unknownRegistryLogin {
+			f.messages = appendOnce(f.messages, fmt.Sprintf(loginMessageFormat, "your docker registry"))
+		}
+
+		f.readerDoneCh <- true
+	}()
+}
+
+func appendOnce(slice []string, add string) []string {
+	for _, s := range slice {
+		if s == add {
+			return slice
+		}
+	}
+	return append(slice, add)
+}
+
+func dcImageForService(svc string) string {
+	cfg, err := config.All()
+	if cfg == nil || err != nil {
+		return ""
+	}
+	dc, err := cfg.ComposeConfig()
+	if err != nil {
+		return ""
+	}
+	if image, ok := subMap(dc, "services", svc)["image"].(string); ok {
+		return image
+	}
+	return ""
+}
+
+func subMap(m map[string]interface{}, keys ...string) map[string]interface{} {
+	var ok bool
+	for _, k := range keys {
+		if m, ok = m[k].(map[string]interface{}); !ok {
+			return map[string]interface{}{}
+		}
+	}
+	return m
+}
+
+var reRegistryFromImage = regexp.MustCompile(`^(?:https?://)?([^/]+)/[^/]+/`)
+
+func registryFromImage(image string) string {
+	if match := reRegistryFromImage.FindStringSubmatch(image); match != nil {
+		return match[1]
+	}
+	return ""
+}
+
+func (f *dcErrorFilter) Stop() {
+	// Wait until the filter is complete.
+	<-f.readerDoneCh
+
+	if len(f.messages) == 0 {
+		return
+	}
+	writer := f.Writer()
+	// Print a spacer line to separate pass-through errors from our messages.
+	fmt.Fprintln(writer, "")
+	for _, msg := range f.messages {
+		fmt.Fprintln(writer, msg)
+	}
 }

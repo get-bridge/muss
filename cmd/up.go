@@ -65,6 +65,10 @@ If you want to force Compose to stop and recreate all containers, use the
 			stopAfter := true
 
 			delegator := cmdDelegator(cmd)
+			err = delegator.FilterStderr(newDCErrorFilter())
+			if err != nil {
+				return err
+			}
 
 			switch {
 			// TODO: global noANSI

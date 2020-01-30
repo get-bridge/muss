@@ -29,6 +29,13 @@ func testCmdBuilder(builder func() *cobra.Command, args []string) (string, strin
 	cmd.SetErr(&stderr)
 	cmd.SetArgs(args)
 
+	// Don't write config files.
+	cmd.PreRun = nil
+
+	// The parent command sets these which this command would normally inherit.
+	cmd.SilenceUsage = true
+	cmd.SilenceErrors = true
+
 	err := cmd.Execute()
 
 	return stdout.String(), stderr.String(), err

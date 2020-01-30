@@ -17,8 +17,12 @@ func newPullCommand() *cobra.Command {
 
 			// TODO: pull repos
 
-			return DelegateCmd(
-				cmd,
+			delegator := cmdDelegator(cmd)
+			err := delegator.FilterStderr(newDCErrorFilter())
+			if err != nil {
+				return err
+			}
+			return delegator.Delegate(
 				dockerComposeCmd(cmd, args),
 			)
 		},

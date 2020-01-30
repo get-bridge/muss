@@ -1,5 +1,9 @@
 #!/bin/sh
 
+warn () {
+  echo "$*" >&2
+}
+
 if [ -n "$MUSS_TEST_DC_ERROR" ]; then
   exit "$MUSS_TEST_DC_ERROR"
 fi
@@ -10,7 +14,14 @@ if [ "1" = "$MUSS_TEST_UP_LOGS" ] && [ "$1" = "up" ]; then
   exit 0
 fi
 
-echo std err >&2
+warn std err
+
+registry="private.registry.docker"
+ns=ns
+image=image
+tag=tag
+path="$registry/$ns/$image:$tag"
+svc="test"
 
 case "$*" in
   ps\ -q\ *)
@@ -19,6 +30,89 @@ case "$*" in
       echo "second:$3:cid"
     fi
     exit;;
+  build)
+    case "$MUSS_TEST_REGISTRY_ERROR" in
+      no-basic-auth)
+        warn "Building $svc"
+        echo "Step 1/1 : FROM $path" # stdout, not stderr
+        warn "Service '$svc' failed to build: Get https://$registry/v2/$ns/$image/manifests/$tag: no basic auth credentials"
+        exit 1;;
+      403)
+        warn "Building $svc"
+        echo "Step 1/1 : FROM $path" # stdout, not stderr
+        warn "Service '$svc' failed to build: error parsing HTTP 403 response body: unexpected end of JSON input: \"\""
+        exit 1;;
+      *)
+        ;;
+    esac
+    ;;
+  pull)
+    case "$MUSS_TEST_REGISTRY_ERROR" in
+      no-basic-auth)
+        warn "ERROR: for $svc  Get https://$registry/v2/$ns/$image/manifests/$tag: no basic auth credentials"
+        warn "Get https://$registry/v2/$ns/$image/manifests/$tag: no basic auth credentials"
+        exit 1;;
+      403)
+        # Simulate two.
+        warn "ERROR: for foo  error parsing HTTP 403 response body: unexpected end of JSON input: \"\""
+        warn "ERROR: for $svc  error parsing HTTP 403 response body: unexpected end of JSON input: \"\""
+        warn "error parsing HTTP 403 response body: unexpected end of JSON input: \"\""
+        warn "error parsing HTTP 403 response body: unexpected end of JSON input: \"\""
+        exit 1;;
+      *)
+        ;;
+    esac
+    ;;
+  up)
+    case "$MUSS_TEST_REGISTRY_ERROR" in
+      no-basic-auth)
+        warn "Pulling $svc ($path)..."
+        warn "Get https://$registry/v2/$ns/$image/manifests/$tag: no basic auth credentials"
+        exit 1;;
+      build-403)
+        warn "Building $svc"
+        echo "Step 1/1 : FROM $path" # stdout, not stderr
+        warn "Service '$svc' failed to build: error parsing HTTP 403 response body: unexpected end of JSON input: \"\""
+        exit 1;;
+      403)
+        warn "Pulling $svc ($path)..."
+        warn "error parsing HTTP 403 response body: unexpected end of JSON input: \"\""
+        exit 1;;
+      cred-helper)
+        cat <<NOISE >&2
+[pid] Failed to execute script docker-compose
+Traceback (most recent call last):
+  File "site-packages/docker/credentials/store.py", line 80, in _execute
+  File "subprocess.py", line 411, in check_output
+  File "subprocess.py", line 512, in run
+subprocess.CalledProcessError: Command '['/usr/local/bin/docker-credential-desktop', 'get']' returned non-zero exit status 1.
+During handling of the above exception, another exception occurred:
+Traceback (most recent call last):
+  File "site-packages/docker/auth.py", line 264, in _resolve_authconfig_credstore
+  File "site-packages/docker/credentials/store.py", line 35, in get
+  File "site-packages/docker/credentials/store.py", line 93, in _execute
+docker.credentials.errors.StoreError: Credentials store docker-credential-desktop exited with "No stored credential for $registry".
+During handling of the above exception, another exception occurred:
+Traceback (most recent call last):
+  File "docker-compose", line 6, in <module>
+  File "compose/cli/main.py", line 72, in main
+  File "compose/cli/main.py", line 128, in perform_command
+  File "compose/cli/main.py", line 1077, in up
+  File "compose/cli/main.py", line 1073, in up
+  File "compose/project.py", line 548, in up
+  File "compose/service.py", line 367, in ensure_image_exists
+  File "compose/service.py", line 1106, in build
+  File "site-packages/docker/api/build.py", line 261, in build
+  File "site-packages/docker/api/build.py", line 308, in _set_auth_headers
+  File "site-packages/docker/auth.py", line 311, in get_all_credentials
+  File "site-packages/docker/auth.py", line 281, in _resolve_authconfig_credstore
+docker.errors.DockerException: Credentials store error: StoreError('Credentials store docker-credential-desktop exited with "No stored credential for $registry".')
+NOISE
+        exit 1;;
+      *)
+        ;;
+    esac
+    ;;
   version*)
     echo fake
     exit;;

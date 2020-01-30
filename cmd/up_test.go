@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -197,6 +198,94 @@ piyo
 
 			assert.Nil(t, err)
 			assert.Equal(t, "std err\n", stderr)
+			assert.Equal(t, expOut, stdout)
+		})
+
+		t.Run("up with status and private registry 403", func(*testing.T) {
+			os.Setenv("MUSS_TEST_REGISTRY_ERROR", "403")
+			defer os.Unsetenv("MUSS_TEST_REGISTRY_ERROR")
+
+			config.SetConfig(map[string]interface{}{
+				"status": map[string]interface{}{
+					"exec":        []string{"../testdata/bin/status", "prefix"},
+					"interval":    "1.1s",
+					"line_format": "# %s",
+				},
+			})
+
+			stdout, stderr, err := testCmdBuilder(newUpCommand, []string{})
+
+			assert.Equal(t, "exit status 1", err.Error())
+			assert.Equal(t, "std err\nPulling test (private.registry.docker/ns/image:tag)...\nerror parsing HTTP 403 response body: unexpected end of JSON input: \"\"\n\nYou may need to login to private.registry.docker\n", stderr)
+			expOut := term.AnsiEraseToEnd +
+				term.AnsiReset + "# muss" + term.AnsiReset + term.AnsiStart
+			assert.Equal(t, expOut, stdout)
+		})
+
+		t.Run("up without status and private registry basic-auth error", func(*testing.T) {
+			os.Setenv("MUSS_TEST_REGISTRY_ERROR", "no-basic-auth")
+			defer os.Unsetenv("MUSS_TEST_REGISTRY_ERROR")
+
+			stdout, stderr, err := testCmdBuilder(newUpCommand, []string{"--no-status"})
+
+			assert.Equal(t, "exit status 1", err.Error())
+			assert.Equal(t, "std err\nPulling test (private.registry.docker/ns/image:tag)...\nGet https://private.registry.docker/v2/ns/image/manifests/tag: no basic auth credentials\n\nYou may need to login to private.registry.docker\n", stderr)
+			expOut := ""
+			assert.Equal(t, expOut, stdout)
+		})
+
+		t.Run("up with private registry 403 on build", func(*testing.T) {
+			os.Setenv("MUSS_TEST_REGISTRY_ERROR", "build-403")
+			defer os.Unsetenv("MUSS_TEST_REGISTRY_ERROR")
+
+			config.SetConfig(map[string]interface{}{
+				"service_definitions": []config.ServiceDef{
+					config.ServiceDef{
+						"name": "app",
+						"configs": map[string]interface{}{
+							"sole": map[string]interface{}{
+								"services": map[string]interface{}{
+									"test": map[string]interface{}{
+										"image": "myreg.docker/hoge/piyo",
+									},
+								},
+							},
+						},
+					},
+				},
+			})
+			defer config.SetConfig(nil)
+
+			stdout, stderr, err := testCmdBuilder(newUpCommand, []string{"--no-status"})
+
+			assert.Equal(t, "exit status 1", err.Error())
+			assert.Equal(t, "std err\nBuilding test\nService 'test' failed to build: error parsing HTTP 403 response body: unexpected end of JSON input: \"\"\n\nYou may need to login to myreg.docker\n", stderr)
+			expOut := "Step 1/1 : FROM private.registry.docker/ns/image:tag\n"
+			assert.Equal(t, expOut, stdout)
+		})
+
+		t.Run("up with private registry cred-helper stack trach", func(*testing.T) {
+			os.Setenv("MUSS_TEST_REGISTRY_ERROR", "cred-helper")
+			defer os.Unsetenv("MUSS_TEST_REGISTRY_ERROR")
+
+			stdout, stderr, err := testCmdBuilder(newUpCommand, []string{"--no-status"})
+
+			assert.Equal(t, "exit status 1", err.Error())
+
+			lines := strings.SplitAfter(stderr, "\n")
+			length := len(lines)
+			if length < 5 {
+				t.Fatalf("Not enough stderr lines:\n%s", stderr)
+			}
+			assert.Equal(t, "std err\n", lines[0])
+			assert.Equal(t, "[pid] Failed to execute script docker-compose\n", lines[1])
+			// ...
+			assert.Equal(t, `docker.errors.DockerException: Credentials store error: StoreError('Credentials store docker-credential-desktop exited with "No stored credential for private.registry.docker".')`+"\n", lines[length-4])
+			assert.Equal(t, "\n", lines[length-3], "blank")
+			assert.Equal(t, "You may need to login to private.registry.docker\n", lines[length-2])
+			assert.Equal(t, "", lines[length-1], "ended with newline")
+
+			expOut := ""
 			assert.Equal(t, expOut, stdout)
 		})
 

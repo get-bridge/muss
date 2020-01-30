@@ -29,8 +29,12 @@ Options:
 		DisableFlagParsing: true,
 		PreRun:             configSavePreRun,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return DelegateCmd(
-				cmd,
+			delegator := cmdDelegator(cmd)
+			err := delegator.FilterStderr(newDCErrorFilter())
+			if err != nil {
+				return err
+			}
+			return delegator.Delegate(
 				dockerComposeCmd(cmd, args),
 			)
 		},

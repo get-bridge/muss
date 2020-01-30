@@ -22,6 +22,7 @@ type Delegator struct {
 	DoneCh chan bool
 
 	stdoutFilter StreamFilter
+	stderrFilter StreamFilter
 }
 
 // FilterStdout applies a StreamFilter to stdout.
@@ -35,6 +36,21 @@ func (d *Delegator) FilterStdout(f StreamFilter) error {
 	f.SetWriter(d.Stdout)
 	d.Stdout = pw
 	d.stdoutFilter = f
+
+	return nil
+}
+
+// FilterStderr applies a StreamFilter to stderr.
+func (d *Delegator) FilterStderr(f StreamFilter) error {
+	pr, pw, err := os.Pipe()
+	if err != nil {
+		return err
+	}
+
+	f.SetReader(pr)
+	f.SetWriter(d.Stderr)
+	d.Stderr = pw
+	d.stderrFilter = f
 
 	return nil
 }
@@ -66,6 +82,16 @@ func (d *Delegator) Delegate(commands ...*exec.Cmd) (err error) {
 				f.Close()
 			}
 			d.stdoutFilter.Stop()
+		}()
+	}
+
+	if d.stderrFilter != nil {
+		d.stderrFilter.Start(d.DoneCh)
+		defer func() {
+			if f, ok := d.Stderr.(io.WriteCloser); ok {
+				f.Close()
+			}
+			d.stderrFilter.Stop()
 		}()
 	}
 

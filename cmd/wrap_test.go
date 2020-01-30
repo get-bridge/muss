@@ -69,8 +69,10 @@ func errFromWrapCmd(t *testing.T, args ...string) string {
 
 	assert.NotNil(t, err)
 
-	// Error is on stdout.
+	// The package Execute() function calls the root command and then prints
+	// errors so the subcommand itself won't print anything.
 	assert.Equal(t, "", stderr, "no stderr")
+	assert.Equal(t, "", stdout, "no stdout")
 
-	return stdout
+	return err.Error()
 }

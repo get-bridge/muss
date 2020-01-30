@@ -4,7 +4,7 @@ docker_volume = "muss_go_mods"
 def run(cmd) {
   sh """
     docker run \
-      -v ${docker_volume}:/go -v "\$WORKSPACE:/mnt" -w /mnt \
+      -v ${docker_volume}:/go -v "\$WORKSPACE:/mnt:ro" -w /mnt \
       -e GOPRIVATE -e GO111MODULE \
       --rm ${docker_image} ${cmd}
   """
