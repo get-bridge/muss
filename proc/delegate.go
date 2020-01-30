@@ -6,12 +6,37 @@ import (
 	"os/exec"
 )
 
+// StreamFilter will be called at command delegation to allow filtering output streams.
+type StreamFilter interface {
+	SetReader(io.Reader)
+	SetWriter(io.Writer)
+	Start(chan bool)
+	Stop()
+}
+
 // Delegator holds readers/writers to which to delegate command output.
 type Delegator struct {
 	Stdin  io.Reader
 	Stdout io.Writer
 	Stderr io.Writer
 	DoneCh chan bool
+
+	stdoutFilter StreamFilter
+}
+
+// FilterStdout applies a StreamFilter to stdout.
+func (d *Delegator) FilterStdout(f StreamFilter) error {
+	pr, pw, err := os.Pipe()
+	if err != nil {
+		return err
+	}
+
+	f.SetReader(pr)
+	f.SetWriter(d.Stdout)
+	d.Stdout = pw
+	d.stdoutFilter = f
+
+	return nil
 }
 
 // Delegate runs with a Delegator made from `os.Std*`.
@@ -30,6 +55,18 @@ func (d *Delegator) Delegate(commands ...*exec.Cmd) (err error) {
 	// Nothing to do
 	if len(commands) == 0 {
 		return nil
+	}
+
+	d.DoneCh = make(chan bool, 1)
+
+	if d.stdoutFilter != nil {
+		d.stdoutFilter.Start(d.DoneCh)
+		defer func() {
+			if f, ok := d.Stdout.(io.WriteCloser); ok {
+				f.Close()
+			}
+			d.stdoutFilter.Stop()
+		}()
 	}
 
 	cmdch := make(chan error, len(commands))

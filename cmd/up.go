@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"gerrit.instructure.com/muss/config"
+	"gerrit.instructure.com/muss/proc"
 	"gerrit.instructure.com/muss/term"
 )
 
@@ -62,21 +64,30 @@ If you want to force Compose to stop and recreate all containers, use the
 
 			stopAfter := true
 
+			delegator := cmdDelegator(cmd)
+
 			switch {
 			// TODO: global noANSI
 			case opts.detach:
 				fallthrough
 			case opts.noStart:
 				stopAfter = false
-				fallthrough
 			case opts.noStatus:
-				err = DelegateCmd(
-					cmd,
-					dockerComposeCmd(cmd, args),
-				)
 			default:
-				err = runUpWithStatus(cmd, args)
+				var cfg *config.ProjectConfig
+				cfg, err = config.All()
+				if err != nil {
+					return err
+				}
+				err = delegator.FilterStdout(newUpStatusFilter(cfg))
+				if err != nil {
+					return err
+				}
 			}
+
+			err = delegator.Delegate(
+				dockerComposeCmd(cmd, args),
+			)
 
 			// When you interrupt "up" it will usually stop all the services
 			// but sometimes dc just aborts.  If we call stop afterwards it will
@@ -122,31 +133,41 @@ func init() {
 	rootCmd.AddCommand(newUpCommand())
 }
 
-func runUpWithStatus(cmd *cobra.Command, args []string) error {
-	cfg, err := config.All()
-	if err != nil {
-		return err
+type upStatusFilter struct {
+	*proc.Pipe
+	cfg          *config.ProjectConfig
+	readerDoneCh chan bool
+}
+
+func newUpStatusFilter(cfg *config.ProjectConfig) proc.StreamFilter {
+	return &upStatusFilter{
+		cfg:          cfg,
+		readerDoneCh: make(chan bool, 1),
+		Pipe:         &proc.Pipe{},
 	}
+}
 
-	pr, pw, err := os.Pipe()
-	if err != nil {
-		return err
-	}
+func (f *upStatusFilter) Stop() {
+	// Wait for go routines to finish.
+	<-f.readerDoneCh
+}
 
-	delegator := cmdDelegator(cmd)
-	delegator.Stdout = pw
-
-	done := make(chan bool)
-	delegator.DoneCh = done
+func (f *upStatusFilter) Start(done chan bool) {
+	cfg := f.cfg
+	reader := f.Reader()
+	writer := f.Writer()
 
 	// Setup a channel for log output.
 	outputCh := make(chan []byte, 10)
 	go func() {
-		defer pr.Close()
-		scanner := bufio.NewScanner(pr)
+		if f, ok := reader.(io.ReadCloser); ok {
+			defer f.Close()
+		}
+		scanner := bufio.NewScanner(reader)
 		for scanner.Scan() {
 			outputCh <- scanner.Bytes()
 		}
+		f.readerDoneCh <- true
 	}()
 
 	// Setup a channel for status updates.
@@ -185,13 +206,5 @@ func runUpWithStatus(cmd *cobra.Command, args []string) error {
 		}()
 	}
 
-	go term.WriteWithFixedStatusLine(cmd.OutOrStdout(), outputCh, statusCh, done)
-
-	defer func() {
-		pw.Close()
-	}()
-
-	return delegator.Delegate(
-		dockerComposeCmd(cmd, args),
-	)
+	go term.WriteWithFixedStatusLine(writer, outputCh, statusCh, done)
 }
