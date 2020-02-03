@@ -114,11 +114,8 @@ func generateFiles(cfg *ProjectConfig) error {
 		return errs.ErrorOrNil()
 	}
 
-	if err := loadEnvFromCmds(cfg.Secrets...); err != nil {
-		return fmt.Errorf("Failed to load secrets: %w", err)
-	}
+	return cfg.LoadEnv()
 
-	return nil
 }
 
 func yamlDump(object map[string]interface{}) ([]byte, error) {

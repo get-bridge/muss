@@ -1,5 +1,6 @@
 # v0.5 - Unreleased
 
+- Set COMPOSE_PROJECT_NAME from optional "project_name" in muss.yaml.
 - Provide friendlier error messages for registry authentication errors.
 - Improve error output and exit codes.
 

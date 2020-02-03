@@ -14,6 +14,7 @@ type ProjectConfig struct {
 	SecretPassphrase         string                 `mapstructure:"secret_passphrase"`
 	DefaultServicePreference []string               `mapstructure:"default_service_preference"`
 	Status                   *StatusConfig          `mapstructure:"status"`
+	ProjectName              string                 `mapstructure:"project_name"`
 
 	Secrets []envLoader
 

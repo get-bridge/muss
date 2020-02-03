@@ -1,5 +1,6 @@
 # This file is for manual testing.
 
+project_name: mussy
 user_file: muss.user.yaml
 
 secret_commands:

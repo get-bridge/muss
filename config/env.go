@@ -21,6 +21,20 @@ type envLoader interface {
 	VarName() string
 }
 
+// LoadEnv will load environment variables from all config sources
+// including project_name and secret commands.
+func (cfg *ProjectConfig) LoadEnv() error {
+	if cfg.ProjectName != "" {
+		setenvIfUnset("COMPOSE_PROJECT_NAME", cfg.ProjectName)
+	}
+
+	if err := loadEnvFromCmds(cfg.Secrets...); err != nil {
+		return fmt.Errorf("Failed to load secrets: %w", err)
+	}
+
+	return nil
+}
+
 // parseEnvCommands takes an item (interface{}) from a config
 // (map[string]interface{}) and parses it into envCmd object(s) if possible.
 func parseEnvCommands(spec interface{}) ([]envLoader, error) {
@@ -174,14 +188,15 @@ func loadEnvFromBytes(env []byte) error {
 			return fmt.Errorf("failed to parse name=value line: %s", line)
 		}
 
-		name := string(parts[0])
-		if _, ok := os.LookupEnv(name); !ok {
-			err := os.Setenv(name, string(parts[1]))
-			if err != nil {
-				return err
-			}
-		}
+		setenvIfUnset(string(parts[0]), string(parts[1]))
 	}
 
 	return nil
+}
+
+func setenvIfUnset(key string, value string) (err error) {
+	if _, ok := os.LookupEnv(key); !ok {
+		err = os.Setenv(key, value)
+	}
+	return
 }

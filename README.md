@@ -149,6 +149,9 @@ The syntax and options for the main `muss.yaml` file:
     # Path to user customization file.
     user_file: muss.user.yaml
 
+    # If present will set COMPOSE_PROJECT_NAME (unless already set).
+    project_name: myproject
+
     # Define the order for which configuration option to use
     # for any service that has multiple options.
     default_service_preference:
