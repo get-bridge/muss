@@ -1,4 +1,4 @@
-# v0.5 - Unreleased
+# v0.5 - 2020-02-04
 
 - Allow "compose_file" to specify an alternate target file.
 - Warn when COMPOSE_FILE is set but does not contain muss target.
