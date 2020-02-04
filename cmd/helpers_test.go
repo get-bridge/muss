@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
+
+	"gerrit.instructure.com/muss/config"
 )
 
 // helpers
@@ -27,6 +29,7 @@ func testCmdBuilder(builder func() *cobra.Command, args []string) (string, strin
 	cmd := builder()
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stderr)
+	config.SetStderr(&stderr)
 	cmd.SetArgs(args)
 
 	// Don't write config files.

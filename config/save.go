@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
+	"strings"
 	"sync"
 
 	multierror "github.com/hashicorp/go-multierror"
@@ -93,6 +95,8 @@ func generateFiles(cfg *ProjectConfig) error {
 		return fmt.Errorf("Error creating docker-compose config: %w", err)
 	}
 
+	cfg.checkComposeFileVar()
+
 	var wg sync.WaitGroup
 	var errs *multierror.Error
 	var errMux sync.Mutex
@@ -116,6 +120,26 @@ func generateFiles(cfg *ProjectConfig) error {
 
 	return cfg.LoadEnv()
 
+}
+
+func (cfg *ProjectConfig) checkComposeFileVar() {
+	cfile, ok := os.LookupEnv("COMPOSE_FILE")
+	if !ok {
+		return
+	}
+
+	sep := string(os.PathListSeparator)
+	if val, ok := os.LookupEnv("COMPOSE_PATH_SEPARATOR"); ok {
+		sep = val
+	}
+	paths := strings.Split(cfile, sep)
+	for _, path := range paths {
+		if filepath.Base(path) == DockerComposeFile {
+			return
+		}
+	}
+
+	fmt.Fprintf(stderr, "COMPOSE_FILE is set but does not contain muss target '%s'.\n", DockerComposeFile)
 }
 
 func yamlDump(object map[string]interface{}) ([]byte, error) {

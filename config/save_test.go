@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bytes"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -122,6 +123,9 @@ func TestConfigSave(t *testing.T) {
 			assertNotExist(t, "./pre-existing.file")
 			touch("./pre-existing.file")
 
+			var stderr bytes.Buffer
+			SetStderr(&stderr)
+
 			SetConfig(nil)
 			assert.Nil(t, project, "Project config not yet loaded") // prove that Save will load it.
 			Save()
@@ -156,6 +160,82 @@ func TestConfigSave(t *testing.T) {
 
 			assert.Equal(t, "hello", os.Getenv("MUSS_SECRET_TEST"), "loaded secret")
 			assert.Equal(t, "goodbye", os.Getenv("MUSS_SECRET_TEST_TWO"), "loaded second secret")
+
+			assert.Equal(t, "", stderr.String(), "no warnings")
+		})
+
+		t.Run("compose file", func(t *testing.T) {
+			os.Setenv("COMPOSE_FILE", "dc-test.yml")
+			defer os.Unsetenv("COMPOSE_FILE")
+
+			exp := map[string]interface{}{
+				"version": "3.4",
+			}
+			cfg := map[string]interface{}{
+				"service_definitions": []ServiceDef{
+					map[string]interface{}{
+						"name": "app",
+						"configs": map[string]interface{}{
+							"sole": map[string]interface{}{
+								"version": "3.4",
+							},
+						},
+					},
+				},
+			}
+			SetConfig(cfg)
+
+			var stderr bytes.Buffer
+			SetStderr(&stderr)
+
+			Save()
+
+			if written, err := ioutil.ReadFile(DockerComposeFile); err != nil {
+				t.Fatalf("failed to open generated file: %s", err)
+			} else {
+
+				assert.Contains(t,
+					string(written),
+					"# To add new service definition files edit "+ProjectFile+".",
+					"contains generated comments",
+				)
+
+				parsed, err := parseYaml(written)
+				if err != nil {
+					t.Fatalf("failed to parse yaml: %s\n", err)
+				}
+				assert.EqualValues(t, exp, parsed, "Generated docker-compose yaml")
+			}
+
+			assert.Equal(t, "COMPOSE_FILE is set but does not contain muss target 'docker-compose.yml'.\n", stderr.String(), "warning about COMPOSE_FILE")
+		})
+
+		t.Run("more compose file", func(t *testing.T) {
+			defer os.Unsetenv("COMPOSE_FILE")
+			defer os.Unsetenv("COMPOSE_PATH_SEPARATOR")
+			os.Unsetenv("COMPOSE_FILE")
+
+			var stderr bytes.Buffer
+			SetStderr(&stderr)
+			SetConfig(map[string]interface{}{})
+
+			warning := func() string {
+				stderr.Reset()
+				project.checkComposeFileVar()
+				return stderr.String()
+			}
+
+			assert.Equal(t, "", warning(), "no warning when unset")
+
+			os.Setenv("COMPOSE_FILE", "foo.yml:./docker-compose.yml:bar.yml")
+			assert.Equal(t, "", warning(), "no warning when included")
+
+			os.Setenv("COMPOSE_PATH_SEPARATOR", ";")
+			os.Setenv("COMPOSE_FILE", "foo.yml;./docker-compose.yml;bar.yml")
+			assert.Equal(t, "", warning(), "no warning when included (alternate separator)")
+
+			os.Unsetenv("COMPOSE_PATH_SEPARATOR")
+			assert.Equal(t, "COMPOSE_FILE is set but does not contain muss target 'docker-compose.yml'.\n", warning(), "warning when not found")
 		})
 
 		t.Run("ensureFile", func(t *testing.T) {
