@@ -10,11 +10,16 @@ import (
 )
 
 func newSaveCommand() *cobra.Command {
+	target := "docker-compose.yml"
+	cfg, _ := config.All()
+	if cfg != nil {
+		target = cfg.ComposeFilePath()
+	}
+
 	var saveCmd = &cobra.Command{
 		Use:   "save",
 		Short: "Generate new config files",
-		// TODO: Eventually this may include secrets files.
-		Long: `Generate new ` + config.DockerComposeFile + ` file.`,
+		Long:  `Generate new ` + target + ` file.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := config.Save(); err != nil {
 				fmt.Println(err)

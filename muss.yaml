@@ -1,6 +1,7 @@
 # This file is for manual testing.
 
 project_name: mussy
+compose_file: docker-compose.muss.yml
 user_file: muss.user.yaml
 
 secret_commands:

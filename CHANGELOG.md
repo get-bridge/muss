@@ -1,5 +1,6 @@
 # v0.5 - Unreleased
 
+- Allow "compose_file" to specify an alternate target file.
 - Warn when COMPOSE_FILE is set but does not contain muss target.
 - Set COMPOSE_PROJECT_NAME from optional "project_name" in muss.yaml.
 - Provide friendlier error messages for registry authentication errors.

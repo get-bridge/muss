@@ -152,6 +152,13 @@ The syntax and options for the main `muss.yaml` file:
     # If present will set COMPOSE_PROJECT_NAME (unless already set).
     project_name: myproject
 
+    # Alternate target for compose config (default is docker-compose.yml).
+    # If present will set COMPOSE_FILE (unless already set).
+    # Note that when COMPOSE_FILE is set docker-compose will not automatically
+    # use docker-compose.override.yml.
+    # The override section of the muss user file will still work, however.
+    compose_file: "docker-compose.muss.yml"
+
     # Define the order for which configuration option to use
     # for any service that has multiple options.
     default_service_preference:

@@ -15,6 +15,8 @@ func TestConfigSave(t *testing.T) {
 		defer func() {
 			UserFile = ""
 		}()
+		os.Unsetenv("COMPOSE_FILE")
+		os.Unsetenv("COMPOSE_PATH_SEPARATOR")
 		os.Unsetenv("MUSS_TEST_VAR")
 		os.Unsetenv("MUSS_SECRET_TEST")
 		os.Unsetenv("MUSS_SECRET_TEST_TWO")
@@ -131,7 +133,7 @@ func TestConfigSave(t *testing.T) {
 			Save()
 			assert.NotNil(t, project, "Save loads project config first")
 
-			if written, err := ioutil.ReadFile(DockerComposeFile); err != nil {
+			if written, err := ioutil.ReadFile("docker-compose.yml"); err != nil {
 				t.Fatalf("failed to open generated file: %s", err)
 			} else {
 
@@ -164,21 +166,16 @@ func TestConfigSave(t *testing.T) {
 			assert.Equal(t, "", stderr.String(), "no warnings")
 		})
 
-		t.Run("compose file", func(t *testing.T) {
-			os.Setenv("COMPOSE_FILE", "dc-test.yml")
-			defer os.Unsetenv("COMPOSE_FILE")
-
+		setAndSaveTiny := func(cfg map[string]interface{}, expTarget string) string {
 			exp := map[string]interface{}{
 				"version": "3.4",
 			}
-			cfg := map[string]interface{}{
-				"service_definitions": []ServiceDef{
-					map[string]interface{}{
-						"name": "app",
-						"configs": map[string]interface{}{
-							"sole": map[string]interface{}{
-								"version": "3.4",
-							},
+			cfg["service_definitions"] = []ServiceDef{
+				map[string]interface{}{
+					"name": "app",
+					"configs": map[string]interface{}{
+						"sole": map[string]interface{}{
+							"version": "3.4",
 						},
 					},
 				},
@@ -190,7 +187,7 @@ func TestConfigSave(t *testing.T) {
 
 			Save()
 
-			if written, err := ioutil.ReadFile(DockerComposeFile); err != nil {
+			if written, err := ioutil.ReadFile(expTarget); err != nil {
 				t.Fatalf("failed to open generated file: %s", err)
 			} else {
 
@@ -207,10 +204,34 @@ func TestConfigSave(t *testing.T) {
 				assert.EqualValues(t, exp, parsed, "Generated docker-compose yaml")
 			}
 
-			assert.Equal(t, "COMPOSE_FILE is set but does not contain muss target 'docker-compose.yml'.\n", stderr.String(), "warning about COMPOSE_FILE")
+			return stderr.String()
+		}
+
+		t.Run("COMPOSE_FILE is set", func(t *testing.T) {
+			os.Setenv("COMPOSE_FILE", "dc-test.yml")
+			defer os.Unsetenv("COMPOSE_FILE")
+
+			warning := setAndSaveTiny(map[string]interface{}{}, "docker-compose.yml")
+
+			assert.Equal(t, "COMPOSE_FILE is set but does not contain muss target 'docker-compose.yml'.\n", warning, "warning about COMPOSE_FILE")
 		})
 
-		t.Run("more compose file", func(t *testing.T) {
+		t.Run("compose_file config", func(t *testing.T) {
+			warning := setAndSaveTiny(map[string]interface{}{"compose_file": "dc.test.yml"}, "dc.test.yml")
+
+			assert.Equal(t, "", warning, "no warnings")
+		})
+
+		t.Run("compose_file config with COMPOSE_FILE", func(t *testing.T) {
+			os.Setenv("COMPOSE_FILE", "dc-other.yml")
+			defer os.Unsetenv("COMPOSE_FILE")
+
+			warning := setAndSaveTiny(map[string]interface{}{"compose_file": "dc.test.yml"}, "dc.test.yml")
+
+			assert.Equal(t, "COMPOSE_FILE is set but does not contain muss target 'dc.test.yml'.\n", warning, "warning about COMPOSE_FILE")
+		})
+
+		t.Run("COMPOSE_FILE warnings", func(t *testing.T) {
 			defer os.Unsetenv("COMPOSE_FILE")
 			defer os.Unsetenv("COMPOSE_PATH_SEPARATOR")
 			os.Unsetenv("COMPOSE_FILE")

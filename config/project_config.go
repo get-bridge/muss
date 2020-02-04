@@ -15,6 +15,7 @@ type ProjectConfig struct {
 	DefaultServicePreference []string               `mapstructure:"default_service_preference"`
 	Status                   *StatusConfig          `mapstructure:"status"`
 	ProjectName              string                 `mapstructure:"project_name"`
+	ComposeFile              string                 `mapstructure:"compose_file"`
 
 	Secrets []envLoader
 

@@ -134,12 +134,12 @@ func (cfg *ProjectConfig) checkComposeFileVar() {
 	}
 	paths := strings.Split(cfile, sep)
 	for _, path := range paths {
-		if filepath.Base(path) == DockerComposeFile {
+		if filepath.Base(path) == cfg.ComposeFilePath() {
 			return
 		}
 	}
 
-	fmt.Fprintf(stderr, "COMPOSE_FILE is set but does not contain muss target '%s'.\n", DockerComposeFile)
+	fmt.Fprintf(stderr, "COMPOSE_FILE is set but does not contain muss target '%s'.\n", cfg.ComposeFilePath())
 }
 
 func yamlDump(object map[string]interface{}) ([]byte, error) {

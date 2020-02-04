@@ -17,14 +17,10 @@ type FileGenFunc func(string) error
 // FileGenMap is just a map of the file path to its FileGenFunc.
 type FileGenMap map[string]FileGenFunc
 
-// DockerComposeFile is the path to the docker-compose file that will be
-// generated.
-var DockerComposeFile = "docker-compose.yml"
-
 func (cfg *ProjectConfig) loadComposeConfig() error {
 	if cfg.composeConfig == nil {
 		if len(cfg.ServiceDefinitions) == 0 {
-			dcc, err := loadStaticComposeConfig()
+			dcc, err := cfg.loadStaticComposeConfig()
 			if err != nil {
 				return err
 			}
@@ -54,6 +50,14 @@ func (cfg *ProjectConfig) FilesToGenerate() (FileGenMap, error) {
 		return nil, err
 	}
 	return cfg.filesToGenerate, nil
+}
+
+// ComposeFilePath returns the path of the target compose file.
+func (cfg *ProjectConfig) ComposeFilePath() string {
+	if cfg.ComposeFile != "" {
+		return cfg.ComposeFile
+	}
+	return "docker-compose.yml"
 }
 
 // parseServiceDefinitions iterates the ProjectConfig.ServiceDefitions
@@ -142,7 +146,7 @@ func (cfg *ProjectConfig) parseServiceDefinitions() (err error) {
 	}
 
 	if yaml, err := cfg.composeFileBytes(dcc); err == nil {
-		files[DockerComposeFile] = fileGeneratorWithContent(yaml)
+		files[cfg.ComposeFilePath()] = fileGeneratorWithContent(yaml)
 	} else {
 		return err
 	}
@@ -394,8 +398,8 @@ func (cfg *ProjectConfig) composeFileBytes(dcc map[string]interface{}) ([]byte, 
 	return content, nil
 }
 
-func loadStaticComposeConfig() (map[string]interface{}, error) {
-	m, err := readYamlFile(DockerComposeFile)
+func (cfg *ProjectConfig) loadStaticComposeConfig() (map[string]interface{}, error) {
+	m, err := readYamlFile(cfg.ComposeFilePath())
 	if err != nil {
 		// Don't abort config loading if this doesn't exist.
 		if !os.IsNotExist(err) {

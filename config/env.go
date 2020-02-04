@@ -28,6 +28,10 @@ func (cfg *ProjectConfig) LoadEnv() error {
 		setenvIfUnset("COMPOSE_PROJECT_NAME", cfg.ProjectName)
 	}
 
+	if cfg.ComposeFile != "" {
+		setenvIfUnset("COMPOSE_FILE", cfg.ComposeFile)
+	}
+
 	if err := loadEnvFromCmds(cfg.Secrets...); err != nil {
 		return fmt.Errorf("Failed to load secrets: %w", err)
 	}
