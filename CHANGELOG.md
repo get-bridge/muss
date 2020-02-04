@@ -1,4 +1,4 @@
-# v0.6 - Unreleased
+# v0.6 - 2020-02-04
 
 - Fix load order to ensure MUSS_FILE and MUSS_USER_FILE are respected.
 
