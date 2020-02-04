@@ -29,6 +29,8 @@ release:
 
 # Include "version" as a basic smoke test.
 test: version
+	# test load order to ensure env vars are respected.
+	MUSS_FILE=testdata/muss-env/muss.yaml MUSS_USER_FILE=testdata/muss-env/user.yaml go run . config show --format '{{ yaml user }}' | grep -q 'muss_user_file: respected'
 	go test -v ./...
 
 version:

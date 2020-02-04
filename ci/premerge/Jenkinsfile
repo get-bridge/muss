@@ -1,7 +1,7 @@
 docker_image = "golang:1.13"
 docker_volume = "muss_go_mods"
 
-def run(cmd) {
+def drun(cmd) {
   sh """
     docker run \
       -v ${docker_volume}:/go -v "\$WORKSPACE:/mnt:ro" -w /mnt \
@@ -10,7 +10,7 @@ def run(cmd) {
   """
 }
 def go(cmd) {
-  run("go ${cmd} ./...")
+  drun("go ${cmd} ./...")
 }
 
 pipeline {
@@ -35,7 +35,7 @@ pipeline {
       parallel {
         stage('Test') {
           steps {
-            go("test -v")
+            drun("make test")
           }
         }
         stage('Vet') {

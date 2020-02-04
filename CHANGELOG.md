@@ -1,3 +1,7 @@
+# v0.6 - Unreleased
+
+- Fix load order to ensure MUSS_FILE and MUSS_USER_FILE are respected.
+
 # v0.5 - 2020-02-04
 
 - Allow "compose_file" to specify an alternate target file.

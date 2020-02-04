@@ -52,14 +52,10 @@ func Execute(args []string) int {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
-
-	rootCmd.AddCommand(cmdconfig.NewCommand())
-}
-
-func initConfig() {
 	if cfgFile, ok := os.LookupEnv("MUSS_FILE"); ok {
 		config.ProjectFile = cfgFile
 	}
 	config.UserFile = os.Getenv("MUSS_USER_FILE")
+
+	rootCmd.AddCommand(cmdconfig.NewCommand())
 }
