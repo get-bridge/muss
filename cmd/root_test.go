@@ -6,15 +6,20 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"gerrit.instructure.com/muss/config"
 )
 
-func executeRootCmd(args ...string) (int, string, string) {
+func testRootCmd(args ...string) (int, string, string) {
 	var stdout, stderr strings.Builder
+
+	var cfg *config.ProjectConfig
+	rootCmd := NewRootCommand(cfg)
 
 	rootCmd.SetOut(&stdout)
 	rootCmd.SetErr(&stderr)
 
-	exitCode := Execute(args)
+	exitCode := ExecuteRoot(rootCmd, args)
 
 	return exitCode, stdout.String(), stderr.String()
 }
@@ -31,7 +36,7 @@ func getLines(s string, want int) []string {
 func TestRootCommand(t *testing.T) {
 	withTestPath(t, func(*testing.T) {
 		t.Run("bad flag", func(*testing.T) {
-			exitCode, stdout, stderr := executeRootCmd("--foo")
+			exitCode, stdout, stderr := testRootCmd("--foo")
 
 			assert.Equal(t, 1, exitCode, "exit 1")
 			assert.Equal(t, "", stdout)
@@ -42,7 +47,7 @@ func TestRootCommand(t *testing.T) {
 		})
 
 		t.Run("bad subcmd flag", func(*testing.T) {
-			exitCode, stdout, stderr := executeRootCmd("wrap", "--foo")
+			exitCode, stdout, stderr := testRootCmd("wrap", "--foo")
 
 			assert.Equal(t, 1, exitCode, "exit 1")
 			assert.Equal(t, "", stdout)
@@ -55,7 +60,7 @@ func TestRootCommand(t *testing.T) {
 		t.Run("non-zero delegated command exit", func(*testing.T) {
 			os.Setenv("MUSS_TEST_DC_ERROR", "2")
 			defer os.Unsetenv("MUSS_TEST_DC_ERROR")
-			exitCode, stdout, stderr := executeRootCmd("pull")
+			exitCode, stdout, stderr := testRootCmd("pull")
 
 			assert.Equal(t, 2, exitCode, "exit 2")
 			assert.Equal(t, "", stdout)

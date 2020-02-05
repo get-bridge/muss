@@ -11,10 +11,8 @@ import (
 
 func TestConfigSave(t *testing.T) {
 	withTempDir(t, func(tmpdir string) {
-		UserFile = "muss.test.yaml"
-		defer func() {
-			UserFile = ""
-		}()
+		os.Setenv("MUSS_USER_FILE", "muss.test.yaml")
+		defer os.Unsetenv("MUSS_USER_FILE")
 		os.Unsetenv("COMPOSE_FILE")
 		os.Unsetenv("COMPOSE_PATH_SEPARATOR")
 		os.Unsetenv("MUSS_TEST_VAR")

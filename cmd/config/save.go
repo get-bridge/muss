@@ -6,15 +6,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	config "gerrit.instructure.com/muss/config"
+	"gerrit.instructure.com/muss/config"
 )
 
-func newSaveCommand() *cobra.Command {
-	target := "docker-compose.yml"
-	cfg, _ := config.All()
-	if cfg != nil {
-		target = cfg.ComposeFilePath()
-	}
+func newSaveCommand(cfg *config.ProjectConfig) *cobra.Command {
+	target := cfg.ComposeFilePath()
 
 	var saveCmd = &cobra.Command{
 		Use:   "save",
@@ -28,4 +24,8 @@ func newSaveCommand() *cobra.Command {
 		},
 	}
 	return saveCmd
+}
+
+func init() {
+	AddCommandBuilder(newSaveCommand)
 }

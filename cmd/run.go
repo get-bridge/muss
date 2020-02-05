@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+
+	"gerrit.instructure.com/muss/config"
 )
 
-func newRunCommand() *cobra.Command {
+func newRunCommand(cfg *config.ProjectConfig) *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "run",
 		Short: "Run a one-off command",
@@ -75,5 +77,5 @@ Options:
 }
 
 func init() {
-	rootCmd.AddCommand(newRunCommand())
+	AddCommandBuilder(newRunCommand)
 }

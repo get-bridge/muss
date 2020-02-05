@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+
+	"gerrit.instructure.com/muss/config"
 )
 
-func newPullCommand() *cobra.Command {
+func newPullCommand(cfg *config.ProjectConfig) *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "pull",
 		Short: "Pull the latest images for services",
@@ -18,7 +20,7 @@ func newPullCommand() *cobra.Command {
 			// TODO: pull repos
 
 			delegator := cmdDelegator(cmd)
-			err := delegator.FilterStderr(newDCErrorFilter())
+			err := delegator.FilterStderr(newDCErrorFilter(cfg))
 			if err != nil {
 				return err
 			}
@@ -37,5 +39,5 @@ func newPullCommand() *cobra.Command {
 }
 
 func init() {
-	rootCmd.AddCommand(newPullCommand())
+	AddCommandBuilder(newPullCommand)
 }

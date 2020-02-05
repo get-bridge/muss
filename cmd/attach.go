@@ -5,9 +5,11 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	"gerrit.instructure.com/muss/config"
 )
 
-func newAttachCommand() *cobra.Command {
+func newAttachCommand(cfg *config.ProjectConfig) *cobra.Command {
 	index := 1
 	var cmd = &cobra.Command{
 		Use:   "attach",
@@ -54,5 +56,5 @@ func newAttachCommand() *cobra.Command {
 }
 
 func init() {
-	rootCmd.AddCommand(newAttachCommand())
+	AddCommandBuilder(newAttachCommand)
 }

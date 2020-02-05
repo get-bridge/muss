@@ -16,7 +16,9 @@ func testShowCommand(t *testing.T, args []string) (string, string) {
 
 	var stdout, stderr strings.Builder
 
-	cmd := newShowCommand()
+	cfg, _ := config.All()
+
+	cmd := newShowCommand(cfg)
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stderr)
 	cmd.SetArgs(args)

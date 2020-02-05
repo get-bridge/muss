@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+
+	"gerrit.instructure.com/muss/config"
 )
 
-func newRestartCommand() *cobra.Command {
+func newRestartCommand(cfg *config.ProjectConfig) *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "restart",
 		Short: "Restart services",
@@ -27,5 +29,5 @@ func newRestartCommand() *cobra.Command {
 }
 
 func init() {
-	rootCmd.AddCommand(newRestartCommand())
+	AddCommandBuilder(newRestartCommand)
 }

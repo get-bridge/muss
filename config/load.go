@@ -28,6 +28,11 @@ func SetConfig(cfg map[string]interface{}) error {
 }
 
 func load() error {
+	if cfgFile := os.Getenv("MUSS_FILE"); cfgFile != "" {
+		ProjectFile = cfgFile
+	}
+	UserFile = os.Getenv("MUSS_USER_FILE")
+
 	// If there is no config file do the best you can
 	// (allow muss to wrap docker-compose without a config file).
 	if _, err := os.Stat(ProjectFile); err != nil && os.IsNotExist(err) {

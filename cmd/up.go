@@ -17,7 +17,7 @@ import (
 	"gerrit.instructure.com/muss/term"
 )
 
-func newUpCommand() *cobra.Command {
+func newUpCommand(cfg *config.ProjectConfig) *cobra.Command {
 	opts := struct {
 		noStatus bool
 
@@ -65,7 +65,7 @@ If you want to force Compose to stop and recreate all containers, use the
 			stopAfter := true
 
 			delegator := cmdDelegator(cmd)
-			err = delegator.FilterStderr(newDCErrorFilter())
+			err = delegator.FilterStderr(newDCErrorFilter(cfg))
 			if err != nil {
 				return err
 			}
@@ -78,11 +78,6 @@ If you want to force Compose to stop and recreate all containers, use the
 				stopAfter = false
 			case opts.noStatus:
 			default:
-				var cfg *config.ProjectConfig
-				cfg, err = config.All()
-				if err != nil {
-					return err
-				}
 				err = delegator.FilterStdout(newUpStatusFilter(cfg))
 				if err != nil {
 					return err
@@ -134,7 +129,7 @@ If you want to force Compose to stop and recreate all containers, use the
 }
 
 func init() {
-	rootCmd.AddCommand(newUpCommand())
+	AddCommandBuilder(newUpCommand)
 }
 
 type upStatusFilter struct {

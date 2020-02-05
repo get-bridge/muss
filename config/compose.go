@@ -54,7 +54,7 @@ func (cfg *ProjectConfig) FilesToGenerate() (FileGenMap, error) {
 
 // ComposeFilePath returns the path of the target compose file.
 func (cfg *ProjectConfig) ComposeFilePath() string {
-	if cfg.ComposeFile != "" {
+	if cfg != nil && cfg.ComposeFile != "" {
 		return cfg.ComposeFile
 	}
 	return "docker-compose.yml"

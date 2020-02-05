@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+
+	"gerrit.instructure.com/muss/config"
 )
 
-func newLogsCommand() *cobra.Command {
+func newLogsCommand(cfg *config.ProjectConfig) *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "logs",
 		Short: "View output from services",
@@ -29,5 +31,5 @@ func newLogsCommand() *cobra.Command {
 }
 
 func init() {
-	rootCmd.AddCommand(newLogsCommand())
+	AddCommandBuilder(newLogsCommand)
 }

@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+
+	"gerrit.instructure.com/muss/config"
 )
 
-func newStartCommand() *cobra.Command {
+func newStartCommand(cfg *config.ProjectConfig) *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "start",
 		Short: "Start services",
@@ -24,5 +26,5 @@ func newStartCommand() *cobra.Command {
 }
 
 func init() {
-	rootCmd.AddCommand(newStartCommand())
+	AddCommandBuilder(newStartCommand)
 }

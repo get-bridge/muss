@@ -7,10 +7,11 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"gerrit.instructure.com/muss/config"
 	"gerrit.instructure.com/muss/proc"
 )
 
-func newWrapCommand() *cobra.Command {
+func newWrapCommand(cfg *config.ProjectConfig) *cobra.Command {
 	var shellCommands []string
 	shell := os.Getenv("SHELL")
 	if shell == "" {
@@ -69,5 +70,5 @@ Usage: wrap [options] [COMMAND ARGS...]`,
 }
 
 func init() {
-	rootCmd.AddCommand(newWrapCommand())
+	AddCommandBuilder(newWrapCommand)
 }

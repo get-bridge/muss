@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+
+	"gerrit.instructure.com/muss/config"
 )
 
-func newBuildCommand() *cobra.Command {
+func newBuildCommand(cfg *config.ProjectConfig) *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "build",
 		Short: "Build or rebuild services",
@@ -30,7 +32,7 @@ Options:
 		PreRun:             configSavePreRun,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			delegator := cmdDelegator(cmd)
-			err := delegator.FilterStderr(newDCErrorFilter())
+			err := delegator.FilterStderr(newDCErrorFilter(cfg))
 			if err != nil {
 				return err
 			}
@@ -47,5 +49,5 @@ Options:
 }
 
 func init() {
-	rootCmd.AddCommand(newBuildCommand())
+	AddCommandBuilder(newBuildCommand)
 }

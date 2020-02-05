@@ -6,13 +6,14 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"gerrit.instructure.com/muss/config"
 	"gerrit.instructure.com/muss/proc"
 )
 
 // Version is the program version, filled in from git during build process.
 var Version = "[development]"
 
-func newVersionCommand() *cobra.Command {
+func newVersionCommand(_ *config.ProjectConfig) *cobra.Command {
 	short := false
 	var cmd = &cobra.Command{
 		Use:   "version",
@@ -65,5 +66,5 @@ func newVersionCommand() *cobra.Command {
 }
 
 func init() {
-	rootCmd.AddCommand(newVersionCommand())
+	AddCommandBuilder(newVersionCommand)
 }

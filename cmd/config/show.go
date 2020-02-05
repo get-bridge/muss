@@ -8,12 +8,12 @@ import (
 	"github.com/spf13/cobra"
 	yaml "gopkg.in/yaml.v2"
 
-	config "gerrit.instructure.com/muss/config"
+	"gerrit.instructure.com/muss/config"
 )
 
 var format = "{{ yaml . }}"
 
-func newShowCommand() *cobra.Command {
+func newShowCommand(cfg *config.ProjectConfig) *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "show",
 		Short: "Show muss config",
@@ -37,7 +37,6 @@ Template examples:
   '{{ range .service_definitions }}{{ range $k, $v := .configs }}{{ $k }}{{ "\n" }}{{ end }}{{end }}'
 `,
 		Run: func(cmd *cobra.Command, args []string) {
-			cfg, _ := config.All()
 			err := processTemplate(format, cfg, cmd.OutOrStdout())
 			// Print the error rather than returning it
 			// so that we don't print the whole help string for template errorrs.
@@ -46,7 +45,9 @@ Template examples:
 			}
 		},
 	}
+
 	cmd.Flags().StringVar(&format, "format", format, "Format the output using the given Go template")
+
 	return cmd
 }
 
@@ -99,4 +100,8 @@ func yamlToString(object interface{}) string {
 		panic(fmt.Errorf("unable to marshal object to YAML: %v", err))
 	}
 	return string(bs)
+}
+
+func init() {
+	AddCommandBuilder(newShowCommand)
 }

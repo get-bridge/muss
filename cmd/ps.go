@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+
+	"gerrit.instructure.com/muss/config"
 )
 
-func newPsCommand() *cobra.Command {
+func newPsCommand(cfg *config.ProjectConfig) *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "ps",
 		Short: "List containers",
@@ -28,5 +30,5 @@ func newPsCommand() *cobra.Command {
 }
 
 func init() {
-	rootCmd.AddCommand(newPsCommand())
+	AddCommandBuilder(newPsCommand)
 }

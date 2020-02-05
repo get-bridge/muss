@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+
+	"gerrit.instructure.com/muss/config"
 )
 
-func newExecCommand() *cobra.Command {
+func newExecCommand(cfg *config.ProjectConfig) *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "exec",
 		Short: "Execute a command in a running container",
@@ -44,5 +46,5 @@ Options:
 }
 
 func init() {
-	rootCmd.AddCommand(newExecCommand())
+	AddCommandBuilder(newExecCommand)
 }

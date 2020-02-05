@@ -6,8 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spf13/cobra"
-
 	"gerrit.instructure.com/muss/config"
 )
 
@@ -23,10 +21,12 @@ func init() {
 	testbin = path.Join(cwd, "..", "testdata", "bin")
 }
 
-func testCmdBuilder(builder func() *cobra.Command, args []string) (string, string, error) {
+func testCmdBuilder(builder CommandBuilder, args []string) (string, string, error) {
 	var stdout, stderr strings.Builder
 
-	cmd := builder()
+	cfg, _ := config.All()
+
+	cmd := builder(cfg)
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stderr)
 	config.SetStderr(&stderr)

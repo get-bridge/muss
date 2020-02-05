@@ -5,11 +5,23 @@ import (
 
 	"github.com/spf13/cobra"
 
-	config "gerrit.instructure.com/muss/config"
+	"gerrit.instructure.com/muss/config"
 )
 
+// CommandBuilder is a function that takes the project config as an argument
+// and returns a cobra command.
+type CommandBuilder func(*config.ProjectConfig) *cobra.Command
+
+var cmdBuilders = make([]CommandBuilder, 0)
+
+// AddCommandBuilder takes the provided function and adds it to the list of
+// commands that will be added to the root command when it is built.
+func AddCommandBuilder(f CommandBuilder) {
+	cmdBuilders = append(cmdBuilders, f)
+}
+
 // NewCommand builds the config subcommand.
-func NewCommand() *cobra.Command {
+func NewCommand(cfg *config.ProjectConfig) *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "config",
 		Short: "muss configuration",
@@ -25,10 +37,9 @@ func NewCommand() *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(
-		newSaveCommand(),
-		newShowCommand(),
-	)
+	for _, f := range cmdBuilders {
+		cmd.AddCommand(f(cfg))
+	}
 
 	return cmd
 }

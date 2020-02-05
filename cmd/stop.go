@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+
+	"gerrit.instructure.com/muss/config"
 )
 
-func newStopCommand() *cobra.Command {
+func newStopCommand(cfg *config.ProjectConfig) *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "stop",
 		Short: "Stop services",
@@ -29,5 +31,5 @@ They can be started again with "start".`,
 }
 
 func init() {
-	rootCmd.AddCommand(newStopCommand())
+	AddCommandBuilder(newStopCommand)
 }

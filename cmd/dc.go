@@ -3,10 +3,11 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
+	"gerrit.instructure.com/muss/config"
 	"gerrit.instructure.com/muss/proc"
 )
 
-func newDcCommand() *cobra.Command {
+func newDcCommand(cfg *config.ProjectConfig) *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "dc",
 		Short: "Call aribtrary docker-compose commands",
@@ -37,5 +38,5 @@ Usage:
 }
 
 func init() {
-	rootCmd.AddCommand(newDcCommand())
+	AddCommandBuilder(newDcCommand)
 }

@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+
+	"gerrit.instructure.com/muss/config"
 )
 
-func newRmCommand() *cobra.Command {
+func newRmCommand(cfg *config.ProjectConfig) *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "rm",
 		Short: "Remove stopped containers",
@@ -35,5 +37,5 @@ Any data which is not in a volume will be lost.`,
 }
 
 func init() {
-	rootCmd.AddCommand(newRmCommand())
+	AddCommandBuilder(newRmCommand)
 }

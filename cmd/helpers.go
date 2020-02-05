@@ -136,12 +136,14 @@ func dockerContainerID(service string) (string, error) {
 
 type dcErrorFilter struct {
 	*proc.Pipe
+	cfg          *config.ProjectConfig
 	messages     []string
 	readerDoneCh chan bool
 }
 
-func newDCErrorFilter() proc.StreamFilter {
+func newDCErrorFilter(cfg *config.ProjectConfig) proc.StreamFilter {
 	return &dcErrorFilter{
+		cfg:          cfg,
 		readerDoneCh: make(chan bool, 1),
 		Pipe:         &proc.Pipe{},
 	}
@@ -153,6 +155,7 @@ var reParsingHTTP403 = regexp.MustCompile(`(?:Service '(\S+)' failed to build:\s
 var reNoStoredCredential = regexp.MustCompile(`No stored credential for ([^"]+)`)
 
 func (f *dcErrorFilter) Start(doneCh chan bool) {
+	cfg := f.cfg
 	reader := f.Reader()
 	writer := f.Writer()
 	f.messages = make([]string, 0)
@@ -189,11 +192,11 @@ func (f *dcErrorFilter) Start(doneCh chan bool) {
 				} else if match := reParsingHTTP403.FindSubmatch(line); match != nil {
 					registry := lastRegistry
 					if len(match[1]) > 0 {
-						registry = registryFromImage(dcImageForService(string(match[1])))
+						registry = registryFromImage(dcImageForService(cfg, string(match[1])))
 					} else if len(match[2]) > 0 {
-						registry = registryFromImage(dcImageForService(string(match[2])))
+						registry = registryFromImage(dcImageForService(cfg, string(match[2])))
 					} else if lastRegistry == "" && lastService != "" {
-						registry = registryFromImage(dcImageForService(lastService))
+						registry = registryFromImage(dcImageForService(cfg, lastService))
 					}
 					if registry == "" {
 						unknownRegistryLogin = true
@@ -232,9 +235,8 @@ func appendOnce(slice []string, add string) []string {
 	return append(slice, add)
 }
 
-func dcImageForService(svc string) string {
-	cfg, err := config.All()
-	if cfg == nil || err != nil {
+func dcImageForService(cfg *config.ProjectConfig, svc string) string {
+	if cfg == nil {
 		return ""
 	}
 	dc, err := cfg.ComposeConfig()

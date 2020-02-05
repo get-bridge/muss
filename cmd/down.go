@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+
+	"gerrit.instructure.com/muss/config"
 )
 
-func newDownCommand() *cobra.Command {
+func newDownCommand(cfg *config.ProjectConfig) *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "down",
 		Short: "Stop and remove containers, networks, images, and volumes",
@@ -52,5 +54,5 @@ Options:
 }
 
 func init() {
-	rootCmd.AddCommand(newDownCommand())
+	AddCommandBuilder(newDownCommand)
 }
