@@ -31,7 +31,9 @@ release:
 test: version
 	# test load order to ensure env vars are respected.
 	MUSS_FILE=testdata/muss-env/muss.yaml MUSS_USER_FILE=testdata/muss-env/user.yaml go run . config show --format '{{ yaml user }}' | grep -q 'muss_user_file: respected'
-	go test -v ./...
+	mkdir -p coverage
+	go test -coverprofile=coverage/out -v ./...
+	go tool cover -html=coverage/out -o coverage/index.html
 
 version:
 	go run $(BUILD_ARGS) . version

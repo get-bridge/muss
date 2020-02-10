@@ -1,21 +1,24 @@
 docker_image = "golang:1.13"
 docker_volume = "muss_go_mods"
 
-def drun(cmd) {
+def drun(docker_args, cmd) {
   sh """
     docker run \
-      -v ${docker_volume}:/go -v "\$WORKSPACE:/mnt:ro" -w /mnt \
+      -v ${docker_volume}:/go \
+      -v "\$WORKSPACE:/mnt:ro" -w /mnt \
       -e GOPRIVATE -e GO111MODULE \
-      --rm ${docker_image} ${cmd}
+      ${docker_args} \
+      ${docker_image} ${cmd}
   """
 }
+
 def go(cmd) {
-  drun("go ${cmd} ./...")
+  drun("--rm", "go ${cmd} ./...")
 }
 
 pipeline {
   agent {
-    label "bridge-docker"
+    label "docker"
   }
   options {
     ansiColor('xterm')
@@ -30,12 +33,33 @@ pipeline {
         go("build")
       }
     }
-
     stage('Tests') {
       parallel {
         stage('Test') {
+          environment {
+            container = "muss${env.BUILD_NUMBER}"
+            coverage_vol = "muss_coverage"
+          }
           steps {
-            drun("make test")
+            sh "mkdir -p coverage"
+            drun("--name '${env.container}' -v ${env.coverage_vol}:/mnt/coverage", "make test")
+            sh """
+              docker cp "${env.container}:/mnt/coverage" ./
+              docker rm "${env.container}"
+              docker volume rm "${env.coverage_vol}"
+            """
+          }
+          post {
+            success {
+              archiveArtifacts artifacts: 'coverage/**'
+              publishHTML(reportDir: 'coverage/',
+                          reportFiles: 'index.html',
+                          reportName: 'Code Coverage',
+                          keepAll: true,
+                          alwaysLinkToLastBuild: false,
+                          allowMissing: false)
+
+            }
           }
         }
         stage('Vet') {
@@ -49,7 +73,7 @@ pipeline {
   post {
     always {
       sh """
-        docker volume rm ${docker_volume}
+        docker volume rm "${docker_volume}"
       """
     }
   }
