@@ -104,7 +104,7 @@ func TestRunCommand(t *testing.T) {
 }
 
 func testRunArgs(t *testing.T, args []string) []string {
-	stdout, stderr, err := testCmdBuilder(newRunCommand, args)
+	stdout, stderr, err := runTestCommand(nil, append([]string{"run"}, args...))
 
 	assert.Nil(t, err)
 	assert.Equal(t, "", stderr, "exec not actually get called")

@@ -9,7 +9,8 @@ import (
 func TestLogsCommand(t *testing.T) {
 	withTestPath(t, func(*testing.T) {
 		t.Run("all args pass through", func(*testing.T) {
-			stdout, stderr, err := testCmdBuilder(newLogsCommand, []string{
+			stdout, stderr, err := runTestCommand(nil, []string{
+				"logs",
 				"--no-color",
 				"-f",
 				"-t",
@@ -34,7 +35,8 @@ web
 		})
 
 		t.Run("some args", func(*testing.T) {
-			stdout, stderr, err := testCmdBuilder(newLogsCommand, []string{
+			stdout, stderr, err := runTestCommand(nil, []string{
+				"logs",
 				"-f",
 				"--tail", "all",
 				"app",
@@ -55,7 +57,7 @@ web
 		})
 
 		t.Run("no args", func(*testing.T) {
-			stdout, stderr, err := testCmdBuilder(newLogsCommand, []string{})
+			stdout, stderr, err := runTestCommand(nil, []string{"logs"})
 
 			expOut := `docker-compose
 logs

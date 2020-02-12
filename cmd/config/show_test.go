@@ -8,32 +8,28 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	rootcmd "gerrit.instructure.com/muss/cmd"
 	"gerrit.instructure.com/muss/config"
 )
 
-func testShowCommand(t *testing.T, args []string) (string, string) {
+func testShowCommand(t *testing.T, cfg *config.ProjectConfig, args []string) (string, string) {
 	t.Helper()
 
 	var stdout, stderr strings.Builder
 
-	cfg, _ := config.All()
-
-	cmd := newShowCommand(cfg)
+	cmd := rootcmd.NewRootCommand(cfg)
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stderr)
-	cmd.SetArgs(args)
 
-	if err := cmd.Execute(); err != nil {
-		t.Fatal("error executing cmd: ", err)
-	}
+	rootcmd.ExecuteRoot(cmd, append([]string{"config", "show"}, args...))
 
 	return stdout.String(), stderr.String()
 }
 
-func showOut(t *testing.T, format string) string {
+func showOut(t *testing.T, cfg *config.ProjectConfig, format string) string {
 	t.Helper()
 
-	stdout, stderr := testShowCommand(t, []string{"--format", format})
+	stdout, stderr := testShowCommand(t, cfg, []string{"--format", format})
 
 	if stderr != "" {
 		t.Fatal("error processing template: ", stderr)
@@ -42,10 +38,10 @@ func showOut(t *testing.T, format string) string {
 	return stdout
 }
 
-func showErr(t *testing.T, format string) string {
+func showErr(t *testing.T, cfg *config.ProjectConfig, format string) string {
 	t.Helper()
 
-	stdout, stderr := testShowCommand(t, []string{"--format", format})
+	stdout, stderr := testShowCommand(t, cfg, []string{"--format", format})
 
 	if stdout != "" {
 		t.Fatal("stdout:", stdout)
@@ -76,7 +72,7 @@ func TestConfigShow(t *testing.T) {
 			},
 		},
 	}
-	cfg := map[string]interface{}{
+	cfgMap := map[string]interface{}{
 		"user": map[string]interface{}{
 			"services": map[string]interface{}{
 				"foo": map[string]interface{}{
@@ -96,36 +92,37 @@ func TestConfigShow(t *testing.T) {
 	}
 
 	t.Run("config show", func(t *testing.T) {
-		config.SetConfig(cfg)
+		config.SetConfig(cfgMap)
+		cfg, _ := config.All()
 
 		assert.Equal(t,
 			"3.5",
-			showOut(t, "{{ compose.version }}"),
+			showOut(t, cfg, "{{ compose.version }}"),
 			"basic")
 
 		assert.Equal(t,
 			"<FOO = bar>",
-			showOut(t, `{{ range compose.services }}{{ range $k, $v := .environment }}<{{ $k }} = {{ $v }}>{{ end }}{{ end }}`),
+			showOut(t, cfg, `{{ range compose.services }}{{ range $k, $v := .environment }}<{{ $k }} = {{ $v }}>{{ end }}{{ end }}`),
 			"iterate over compose services")
 
 		assert.Equal(t,
 			"./here:/there\ndata:/var/data\n",
-			showOut(t, `{{ range .service_definitions }}{{ range .configs }}{{ range .services }}{{ range .volumes }}{{ . }}{{ "\n" }}{{ end }}{{ end }}{{ end }}{{ end }}`),
+			showOut(t, cfg, `{{ range .service_definitions }}{{ range .configs }}{{ range .services }}{{ range .volumes }}{{ . }}{{ "\n" }}{{ end }}{{ end }}{{ end }}{{ end }}`),
 			"iterate over project config service_definitions")
 
 		assert.Equal(t,
 			"- ./here:/there\n- data:/var/data\n",
-			showOut(t, `{{ range .service_definitions }}{{ range .configs }}{{ range .services }}{{ yaml .volumes }}{{ end }}{{ end }}{{ end }}`),
+			showOut(t, cfg, `{{ range .service_definitions }}{{ range .configs }}{{ range .services }}{{ yaml .volumes }}{{ end }}{{ end }}{{ end }}`),
 			"yaml template function")
 
 		assert.Equal(t,
 			"repo\nregistry\n",
-			showOut(t, `{{ range user.service_preference }}{{ . }}{{ "\n" }}{{ end }}`),
+			showOut(t, cfg, `{{ range user.service_preference }}{{ . }}{{ "\n" }}{{ end }}`),
 			"user func")
 
 		assert.Equal(t,
 			"bar",
-			showOut(t, `{{ range .user.services }}{{ .config }}{{ end }}`),
+			showOut(t, cfg, `{{ range .user.services }}{{ .config }}{{ end }}`),
 			".user (key)")
 	})
 
@@ -138,19 +135,28 @@ func TestConfigShow(t *testing.T) {
 		}
 
 		config.SetConfig(nil)
+		cfg, _ := config.All()
+
+		stdout, stderr := testShowCommand(t, cfg, []string{"--format", `{{ range $k, $v := compose.services }}{{ $k }}{{ "." }}{{ $v.image }}{{ "\n" }}{{ end }}`})
 
 		assert.Equal(t,
 			"a1.alpine\na2.alpine\n",
-			showOut(t, `{{ range $k, $v := compose.services }}{{ $k }}{{ "." }}{{ $v.image }}{{ "\n" }}{{ end }}`),
+			stdout,
 			"compose config without service defs")
+
+		assert.Equal(t,
+			"muss project config 'muss.yaml' file not found.\n",
+			stderr,
+			"warns about no project config")
 	})
 
 	t.Run("empty config", func(t *testing.T) {
 		config.SetConfig(map[string]interface{}{})
+		cfg, _ := config.All()
 
 		assert.Equal(t,
 			"",
-			showOut(t, `{{ range user.services }}{{ .config }}{{ end }}`),
+			showOut(t, cfg, `{{ range user.services }}{{ .config }}{{ end }}`),
 			"empty user")
 	})
 
@@ -162,15 +168,16 @@ func TestConfigShow(t *testing.T) {
 				},
 			},
 		})
+		cfg, _ := config.All()
 
 		assert.Contains(t,
-			showErr(t, `{{`),
+			showErr(t, cfg, `{{`),
 			`unexpected unclosed action in command`,
 			"error on stderr",
 		)
 
 		assert.Contains(t,
-			showErr(t, `{{ yaml .user }}`),
+			showErr(t, cfg, `{{ yaml .user }}`),
 			`cannot marshal type: func()`,
 			"yaml() function error on stderr",
 		)

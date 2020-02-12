@@ -9,7 +9,8 @@ import (
 func TestDownCommand(t *testing.T) {
 	withTestPath(t, func(*testing.T) {
 		t.Run("all args pass through", func(*testing.T) {
-			stdout, stderr, err := testCmdBuilder(newDownCommand, []string{
+			stdout, stderr, err := runTestCommand(nil, []string{
+				"down",
 				"--rmi=local",
 				"-v",
 				"--remove-orphans",

@@ -12,7 +12,8 @@ import (
 func TestBuildCommand(t *testing.T) {
 	withTestPath(t, func(*testing.T) {
 		t.Run("all args pass through", func(*testing.T) {
-			stdout, stderr, err := testCmdBuilder(newBuildCommand, []string{
+			stdout, stderr, err := runTestCommand(nil, []string{
+				"build",
 				"--compress",
 				"--force-rm",
 				"--no-cache",
@@ -63,8 +64,9 @@ svc2
 				},
 			})
 			defer config.SetConfig(nil)
+			cfg, _ := config.All()
 
-			stdout, stderr, err := testCmdBuilder(newBuildCommand, []string{})
+			stdout, stderr, err := runTestCommand(cfg, []string{"build"})
 
 			assert.Equal(t, "exit status 1", err.Error())
 			assert.Equal(t, "std err\nBuilding test\nService 'test' failed to build: error parsing HTTP 403 response body: unexpected end of JSON input: \"\"\n\nYou may need to login to myreg.docker\n", stderr)
@@ -93,8 +95,9 @@ svc2
 				},
 			})
 			defer config.SetConfig(nil)
+			cfg, _ := config.All()
 
-			stdout, stderr, err := testCmdBuilder(newBuildCommand, []string{})
+			stdout, stderr, err := runTestCommand(cfg, []string{"build"})
 
 			assert.Equal(t, "exit status 1", err.Error())
 			assert.Equal(t, "std err\nBuilding test\nService 'test' failed to build: error parsing HTTP 403 response body: unexpected end of JSON input: \"\"\n\nYou may need to login to your docker registry\n", stderr)
@@ -106,7 +109,7 @@ svc2
 			os.Setenv("MUSS_TEST_REGISTRY_ERROR", "no-basic-auth")
 			defer os.Unsetenv("MUSS_TEST_REGISTRY_ERROR")
 
-			stdout, stderr, err := testCmdBuilder(newBuildCommand, []string{})
+			stdout, stderr, err := runTestCommand(nil, []string{"build"})
 
 			assert.Equal(t, "exit status 1", err.Error())
 			assert.Equal(t, "std err\nBuilding test\nService 'test' failed to build: Get https://private.registry.docker/v2/ns/image/manifests/tag: no basic auth credentials\n\nYou may need to login to private.registry.docker\n", stderr)

@@ -10,7 +10,8 @@ func TestRestartCommand(t *testing.T) {
 	withTestPath(t, func(*testing.T) {
 		// Test that any valid dc args pass through.
 		t.Run("all args pass through", func(*testing.T) {
-			stdout, stderr, err := testCmdBuilder(newRestartCommand, []string{
+			stdout, stderr, err := runTestCommand(nil, []string{
+				"restart",
 				"-t", "11",
 				"svc",
 			})
@@ -28,7 +29,7 @@ svc
 		})
 
 		t.Run("no args", func(*testing.T) {
-			stdout, stderr, err := testCmdBuilder(newRestartCommand, []string{})
+			stdout, stderr, err := runTestCommand(nil, []string{"restart"})
 
 			expOut := `docker-compose
 restart

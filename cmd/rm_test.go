@@ -10,7 +10,8 @@ func TestRmCommand(t *testing.T) {
 	withTestPath(t, func(*testing.T) {
 		// Test that any valid dc args pass through.
 		t.Run("all args pass through", func(*testing.T) {
-			stdout, stderr, err := testCmdBuilder(newRmCommand, []string{
+			stdout, stderr, err := runTestCommand(nil, []string{
+				"rm",
 				"-f",
 				"-s",
 				"-v",
@@ -32,7 +33,7 @@ svc
 		})
 
 		t.Run("no args", func(*testing.T) {
-			stdout, stderr, err := testCmdBuilder(newRmCommand, []string{})
+			stdout, stderr, err := runTestCommand(nil, []string{"rm"})
 
 			expOut := `docker-compose
 rm

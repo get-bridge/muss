@@ -11,7 +11,8 @@ import (
 func TestExecCommand(t *testing.T) {
 	withTestPath(t, func(*testing.T) {
 		t.Run("all args pass through", func(*testing.T) {
-			stdout, stderr, err := testCmdBuilder(newExecCommand, []string{
+			stdout, stderr, err := runTestCommand(nil, []string{
+				"exec",
 				"-d",
 				"--privileged",
 				"-u", "root",

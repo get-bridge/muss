@@ -10,7 +10,8 @@ func TestPsCommand(t *testing.T) {
 	withTestPath(t, func(*testing.T) {
 		// Test that any valid dc args pass through.
 		t.Run("all args pass through", func(*testing.T) {
-			stdout, stderr, err := testCmdBuilder(newPsCommand, []string{
+			stdout, stderr, err := runTestCommand(nil, []string{
+				"ps",
 				"-q",
 				"--services",
 				"--filter", "KEY=VAL",
@@ -34,7 +35,8 @@ svc
 		})
 
 		t.Run("some args", func(*testing.T) {
-			stdout, stderr, err := testCmdBuilder(newPsCommand, []string{
+			stdout, stderr, err := runTestCommand(nil, []string{
+				"ps",
 				"--all",
 			})
 

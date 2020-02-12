@@ -21,23 +21,18 @@ func init() {
 	testbin = path.Join(cwd, "..", "testdata", "bin")
 }
 
-func testCmdBuilder(builder CommandBuilder, args []string) (string, string, error) {
+func runTestCommand(cfg *config.ProjectConfig, args []string) (string, string, error) {
 	var stdout, stderr strings.Builder
 
-	cfg, _ := config.All()
-
-	cmd := builder(cfg)
+	cmd := NewRootCommand(cfg)
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stderr)
 	config.SetStderr(&stderr)
 	cmd.SetArgs(args)
 
 	// Don't write config files.
-	cmd.PreRun = nil
-
-	// The parent command sets these which this command would normally inherit.
-	cmd.SilenceUsage = true
-	cmd.SilenceErrors = true
+	sub, _, _ := cmd.Find(args)
+	sub.PreRun = nil
 
 	err := cmd.Execute()
 

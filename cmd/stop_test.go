@@ -10,7 +10,8 @@ func TestStopCommand(t *testing.T) {
 	withTestPath(t, func(*testing.T) {
 		// Test that any valid dc args pass through.
 		t.Run("all args pass through", func(*testing.T) {
-			stdout, stderr, err := testCmdBuilder(newStopCommand, []string{
+			stdout, stderr, err := runTestCommand(nil, []string{
+				"stop",
 				"-t", "11",
 				"svc",
 			})
@@ -28,7 +29,7 @@ svc
 		})
 
 		t.Run("no args", func(*testing.T) {
-			stdout, stderr, err := testCmdBuilder(newStopCommand, []string{})
+			stdout, stderr, err := runTestCommand(nil, []string{"stop"})
 
 			expOut := `docker-compose
 stop

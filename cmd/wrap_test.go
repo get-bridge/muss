@@ -14,7 +14,8 @@ import (
 func TestWrapCommand(t *testing.T) {
 	withTestPath(t, func(*testing.T) {
 		t.Run("multiple commands", func(*testing.T) {
-			stdout, stderr, err := testCmdBuilder(newWrapCommand, []string{
+			stdout, stderr, err := runTestCommand(nil, []string{
+				"wrap",
 				"-c", "echo foo",
 				"-c", "echo bar",
 				"-c", "echo err >&2",
@@ -39,7 +40,8 @@ func TestWrapCommand(t *testing.T) {
 				syscall.Kill(os.Getpid(), syscall.SIGTERM)
 			}()
 
-			stdout, stderr, err := testCmdBuilder(newWrapCommand, []string{
+			stdout, stderr, err := runTestCommand(nil, []string{
+				"wrap",
 				"-s", "/bin/sh",
 				"-c", "out () { sleep 1; echo c >&2; }; trap out TERM; sleep 5",
 				"-c", `$0 -c "out () { sleep 1; echo a; }; trap out TERM; sleep 6 & wait" & pids=$!; $0 -c "out () { sleep 2; echo b; }; trap out TERM; sleep 7 & wait" & pids="$pids $!"; all () { kill -s TERM $pids; wait; }; trap all TERM; sleep 8 & wait; exit 0`,
@@ -65,7 +67,7 @@ func TestWrapCommand(t *testing.T) {
 }
 
 func errFromWrapCmd(t *testing.T, args ...string) string {
-	stdout, stderr, err := testCmdBuilder(newWrapCommand, args)
+	stdout, stderr, err := runTestCommand(nil, append([]string{"wrap"}, args...))
 
 	assert.NotNil(t, err)
 

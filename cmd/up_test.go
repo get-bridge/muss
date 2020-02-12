@@ -14,7 +14,8 @@ import (
 func TestUpCommand(t *testing.T) {
 	withTestPath(t, func(*testing.T) {
 		t.Run("all args pass through", func(*testing.T) {
-			stdout, stderr, err := testCmdBuilder(newUpCommand, []string{
+			stdout, stderr, err := runTestCommand(nil, []string{
+				"up",
 				"--no-status",
 				"-d",
 				"--no-color",
@@ -62,7 +63,7 @@ svc
 		})
 
 		t.Run("stop all", func(*testing.T) {
-			stdout, stderr, err := testCmdBuilder(newUpCommand, []string{})
+			stdout, stderr, err := runTestCommand(nil, []string{"up"})
 
 			expOut := term.AnsiEraseToEnd +
 				term.AnsiReset + "# muss" + term.AnsiReset + term.AnsiStart +
@@ -78,7 +79,7 @@ svc
 		})
 
 		t.Run("stop selected", func(*testing.T) {
-			stdout, stderr, err := testCmdBuilder(newUpCommand, []string{"--no-status", "hoge", "piyo"})
+			stdout, stderr, err := runTestCommand(nil, []string{"up", "--no-status", "hoge", "piyo"})
 
 			expOut := `docker-compose
 up
@@ -100,11 +101,12 @@ piyo
 			defer os.Unsetenv("MUSS_TEST_UP_LOGS")
 
 			config.SetConfig(nil)
+			cfg, _ := config.All()
 
 			args := []string{"-d", "--no-start"}
 
 			for _, arg := range args {
-				stdout, stderr, err := testCmdBuilder(newUpCommand, []string{arg})
+				stdout, stderr, err := runTestCommand(cfg, []string{"up", arg})
 
 				expOut := "log\n"
 
@@ -118,9 +120,7 @@ piyo
 			os.Setenv("MUSS_TEST_UP_LOGS", "1")
 			defer os.Unsetenv("MUSS_TEST_UP_LOGS")
 
-			config.SetConfig(nil)
-
-			stdout, stderr, err := testCmdBuilder(newUpCommand, []string{"--no-status", "hoge", "piyo"})
+			stdout, stderr, err := runTestCommand(nil, []string{"up", "--no-status", "hoge", "piyo"})
 
 			expOut := "log\ndocker-compose\nstop\nhoge\npiyo\n"
 
@@ -133,9 +133,7 @@ piyo
 			os.Setenv("MUSS_TEST_UP_LOGS", "1")
 			defer os.Unsetenv("MUSS_TEST_UP_LOGS")
 
-			config.SetConfig(nil)
-
-			stdout, stderr, err := testCmdBuilder(newUpCommand, []string{})
+			stdout, stderr, err := runTestCommand(nil, []string{"up"})
 
 			expOut := term.AnsiEraseToEnd +
 				term.AnsiReset + "# muss" + term.AnsiReset + term.AnsiStart +
@@ -160,7 +158,9 @@ piyo
 				},
 			})
 
-			stdout, stderr, err := testCmdBuilder(newUpCommand, []string{})
+			cfg, _ := config.All()
+
+			stdout, stderr, err := runTestCommand(cfg, []string{"up"})
 
 			expOut := term.AnsiEraseToEnd +
 				term.AnsiReset + "# muss" + term.AnsiReset + term.AnsiStart +
@@ -186,7 +186,9 @@ piyo
 				},
 			})
 
-			stdout, stderr, err := testCmdBuilder(newUpCommand, []string{})
+			cfg, _ := config.All()
+
+			stdout, stderr, err := runTestCommand(cfg, []string{"up"})
 
 			status := "# prefix\n# ok!"
 			expOut := term.AnsiEraseToEnd +
@@ -213,7 +215,9 @@ piyo
 				},
 			})
 
-			stdout, stderr, err := testCmdBuilder(newUpCommand, []string{})
+			cfg, _ := config.All()
+
+			stdout, stderr, err := runTestCommand(cfg, []string{"up"})
 
 			assert.Equal(t, "exit status 1", err.Error())
 			assert.Equal(t, "std err\nPulling test (private.registry.docker/ns/image:tag)...\nerror parsing HTTP 403 response body: unexpected end of JSON input: \"\"\n\nYou may need to login to private.registry.docker\n", stderr)
@@ -226,7 +230,7 @@ piyo
 			os.Setenv("MUSS_TEST_REGISTRY_ERROR", "no-basic-auth")
 			defer os.Unsetenv("MUSS_TEST_REGISTRY_ERROR")
 
-			stdout, stderr, err := testCmdBuilder(newUpCommand, []string{"--no-status"})
+			stdout, stderr, err := runTestCommand(nil, []string{"up", "--no-status"})
 
 			assert.Equal(t, "exit status 1", err.Error())
 			assert.Equal(t, "std err\nPulling test (private.registry.docker/ns/image:tag)...\nGet https://private.registry.docker/v2/ns/image/manifests/tag: no basic auth credentials\n\nYou may need to login to private.registry.docker\n", stderr)
@@ -255,8 +259,9 @@ piyo
 				},
 			})
 			defer config.SetConfig(nil)
+			cfg, _ := config.All()
 
-			stdout, stderr, err := testCmdBuilder(newUpCommand, []string{"--no-status"})
+			stdout, stderr, err := runTestCommand(cfg, []string{"up", "--no-status"})
 
 			assert.Equal(t, "exit status 1", err.Error())
 			assert.Equal(t, "std err\nBuilding test\nService 'test' failed to build: error parsing HTTP 403 response body: unexpected end of JSON input: \"\"\n\nYou may need to login to myreg.docker\n", stderr)
@@ -268,7 +273,7 @@ piyo
 			os.Setenv("MUSS_TEST_REGISTRY_ERROR", "cred-helper")
 			defer os.Unsetenv("MUSS_TEST_REGISTRY_ERROR")
 
-			stdout, stderr, err := testCmdBuilder(newUpCommand, []string{"--no-status"})
+			stdout, stderr, err := runTestCommand(nil, []string{"up", "--no-status"})
 
 			assert.Equal(t, "exit status 1", err.Error())
 

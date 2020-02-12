@@ -9,7 +9,7 @@ import (
 func TestStartCommand(t *testing.T) {
 	withTestPath(t, func(*testing.T) {
 		t.Run("no args", func(*testing.T) {
-			stdout, stderr, err := testCmdBuilder(newStartCommand, []string{})
+			stdout, stderr, err := runTestCommand(nil, []string{"start"})
 
 			expOut := `docker-compose
 start

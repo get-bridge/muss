@@ -12,7 +12,7 @@ func TestVersionCommand(t *testing.T) {
 	withTestPath(t, func(*testing.T) {
 		t.Run("version info", func(*testing.T) {
 
-			stdout, stderr, err := testCmdBuilder(newVersionCommand, []string{})
+			stdout, stderr, err := runTestCommand(nil, []string{"version"})
 
 			expOut := `muss testing
 docker-compose fake
@@ -31,7 +31,7 @@ docker client {{ .Client.Version }}{{ "\n" }}docker server {{ .Server.Version }}
 			os.Setenv("MUSS_TEST_DOCKER_VERSION_ERROR", "1")
 			defer os.Unsetenv("MUSS_TEST_DOCKER_VERSION_ERROR")
 
-			stdout, stderr, err := testCmdBuilder(newVersionCommand, []string{})
+			stdout, stderr, err := runTestCommand(nil, []string{"version"})
 
 			expOut := `muss testing
 docker-compose fake

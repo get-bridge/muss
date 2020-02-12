@@ -11,7 +11,8 @@ func TestAttachCommand(t *testing.T) {
 	withTestPath(t, func(*testing.T) {
 		// Test that any valid dc args pass through.
 		t.Run("all args pass through", func(*testing.T) {
-			stdout, stderr, err := testCmdBuilder(newAttachCommand, []string{
+			stdout, stderr, err := runTestCommand(nil, []string{
+				"attach",
 				"--detach-keys", "alt-q",
 				"--no-stdin",
 				"--sig-proxy",
@@ -33,7 +34,7 @@ some:svc:cid
 		})
 
 		t.Run("no flags", func(*testing.T) {
-			stdout, stderr, err := testCmdBuilder(newAttachCommand, []string{"foo"})
+			stdout, stderr, err := runTestCommand(nil, []string{"attach", "foo"})
 
 			expOut := `docker
 attach
@@ -52,7 +53,7 @@ some:foo:cid
 			os.Setenv("MUSS_TEST_PS_SCALE", "1")
 			defer os.Unsetenv("MUSS_TEST_PS_SCALE")
 
-			stdout, stderr, err := testCmdBuilder(newAttachCommand, []string{"foo", "--index=1"})
+			stdout, stderr, err := runTestCommand(nil, []string{"attach", "foo", "--index=1"})
 
 			expOut := `docker
 attach
@@ -71,7 +72,7 @@ some:foo:cid
 			os.Setenv("MUSS_TEST_PS_SCALE", "1")
 			defer os.Unsetenv("MUSS_TEST_PS_SCALE")
 
-			stdout, stderr, err := testCmdBuilder(newAttachCommand, []string{"foo", "--index", "2"})
+			stdout, stderr, err := runTestCommand(nil, []string{"attach", "foo", "--index", "2"})
 
 			expOut := `docker
 attach
