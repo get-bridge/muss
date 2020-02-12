@@ -5,11 +5,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"gerrit.instructure.com/muss/testutil"
 )
 
 func assertExpandWithWarnings(t *testing.T, spec, exp, expStderr, msg string) {
 	var expanded string
-	stderr := captureStderr(t, func() {
+	stderr := testutil.CaptureStderr(t, func() {
 		expanded = expandWarnOnEmpty(spec)
 	})
 	assert.Equal(t, expStderr, stderr, "warns to stderr")

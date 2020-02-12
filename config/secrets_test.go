@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"gerrit.instructure.com/muss/testutil"
 )
 
 func TestSecretCommands(t *testing.T) {
@@ -17,7 +19,7 @@ func TestSecretCommands(t *testing.T) {
 		secretCmdPath = path.Join(dir, "..", "testdata", "bin", "some-secret")
 	}
 
-	withTempDir(t, func(tmpdir string) {
+	testutil.WithTempDir(t, func(tmpdir string) {
 		findCacheRoot()
 
 		os.Unsetenv("MUSS_TEST_PASSPHRASE")
@@ -56,12 +58,12 @@ func TestSecretCommands(t *testing.T) {
 		secretCacheFile := path.Join(secretDir, genFileName([]string{secretCmdPath, "something", "green"}))
 		secretLog := "secret-log.txt"
 
-		assertNotExist(t, secretCacheFile)
+		testutil.NoFileExists(t, secretCacheFile)
 
 		os.Setenv(varname, "oops")
 		testLoadSecret(t, secret)
 		assert.Equal(t, os.Getenv(varname), "oops", "existing var not overwritten")
-		assertNotExist(t, secretLog) // secret not called
+		testutil.NoFileExists(t, secretLog) // secret not called
 
 		expSecret := "secret is [something green]"
 
@@ -69,32 +71,32 @@ func TestSecretCommands(t *testing.T) {
 		testLoadSecret(t, secret)
 		assert.Equal(t, expSecret, os.Getenv(varname), "sets env var")
 		assert.FileExists(t, secretCacheFile)
-		assert.Equal(t, "shhh p\nshhh s\n", readTestFile(t, secretLog), "pre-cmd and secret each called once")
+		assert.Equal(t, "shhh p\nshhh s\n", testutil.ReadFile(t, secretLog), "pre-cmd and secret each called once")
 
 		os.Setenv(logvarname, "again")
 
 		os.Unsetenv(varname)
 		testLoadSecret(t, secret)
 		assert.Equal(t, expSecret, os.Getenv(varname), "sets env var")
-		assert.Equal(t, "shhh p\nshhh s\n", readTestFile(t, secretLog), "neither called again (cached)")
+		assert.Equal(t, "shhh p\nshhh s\n", testutil.ReadFile(t, secretLog), "neither called again (cached)")
 
 		os.Setenv("MUSS_TEST_PASSPHRASE", "invalidate!")
 
 		os.Unsetenv(varname)
 		testLoadSecret(t, secret)
 		assert.Equal(t, expSecret, os.Getenv(varname), "sets env var")
-		assert.Equal(t, "shhh p\nshhh s\nagain s\n", readTestFile(t, secretLog), "secret called again (invalid cache)")
+		assert.Equal(t, "shhh p\nshhh s\nagain s\n", testutil.ReadFile(t, secretLog), "secret called again (invalid cache)")
 
 		os.Unsetenv(varname)
 		testLoadSecret(t, secret)
 		assert.Equal(t, expSecret, os.Getenv(varname), "sets env var")
-		assert.Equal(t, "shhh p\nshhh s\nagain s\n", readTestFile(t, secretLog), "secret cached")
+		assert.Equal(t, "shhh p\nshhh s\nagain s\n", testutil.ReadFile(t, secretLog), "secret cached")
 
 		appendToTestFile(t, secretCacheFile, "x")
 		os.Unsetenv(varname)
 		testLoadSecret(t, secret)
 		assert.Equal(t, expSecret, os.Getenv(varname), "sets env var")
-		assert.Equal(t, "shhh p\nshhh s\nagain s\nagain s\n", readTestFile(t, secretLog), "cache corrupted")
+		assert.Equal(t, "shhh p\nshhh s\nagain s\nagain s\n", testutil.ReadFile(t, secretLog), "cache corrupted")
 
 		os.Setenv(logvarname, "still")
 
@@ -102,12 +104,12 @@ func TestSecretCommands(t *testing.T) {
 		os.Unsetenv(varname)
 		testLoadSecret(t, secret)
 		assert.Equal(t, expSecret, os.Getenv(varname), "sets env var")
-		assert.Equal(t, "shhh p\nshhh s\nagain s\nagain s\nstill s\n", readTestFile(t, secretLog), "cache corrupted")
+		assert.Equal(t, "shhh p\nshhh s\nagain s\nagain s\nstill s\n", testutil.ReadFile(t, secretLog), "cache corrupted")
 
 		os.Unsetenv(varname)
 		testLoadSecret(t, secret)
 		assert.Equal(t, expSecret, os.Getenv(varname), "sets env var")
-		assert.Equal(t, "shhh p\nshhh s\nagain s\nagain s\nstill s\n", readTestFile(t, secretLog), "cached again")
+		assert.Equal(t, "shhh p\nshhh s\nagain s\nagain s\nstill s\n", testutil.ReadFile(t, secretLog), "cached again")
 
 		t.Run("multiple vars in one command", func(t *testing.T) {
 			os.Setenv("MUSS_TEST_PASSPHRASE", "howdy")
@@ -145,7 +147,7 @@ func TestSecretCommands(t *testing.T) {
 			secretLog := "secret-log.txt"
 
 			os.Remove(secretLog)
-			assertNotExist(t, secretLog)
+			testutil.NoFileExists(t, secretLog)
 
 			testLoadSecret(t, secret)
 
@@ -154,12 +156,12 @@ func TestSecretCommands(t *testing.T) {
 			assert.Equal(t, "foo bar baz", os.Getenv("MUSS_TEST_LINE_1_SECRET"), "set first env var")
 			assert.Equal(t, "something", os.Getenv("MUSS_TEST_LINE_2_SECRET"), "set second env var")
 
-			assert.Equal(t, "multi SETUP\nmulti SECRET\n", readTestFile(t, secretLog), "run once")
+			assert.Equal(t, "multi SETUP\nmulti SECRET\n", testutil.ReadFile(t, secretLog), "run once")
 
 			testLoadSecret(t, secret)
 
 			// setup only gets called once and the secret gets cached.
-			assert.Equal(t, "multi SETUP\nmulti SECRET\n", readTestFile(t, secretLog), "neither runs again")
+			assert.Equal(t, "multi SETUP\nmulti SECRET\n", testutil.ReadFile(t, secretLog), "neither runs again")
 		})
 	})
 

@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"gerrit.instructure.com/muss/testutil"
 )
 
 // NOTE: For YAML:
@@ -82,8 +84,8 @@ user: {service_preference: [repo, registry]}
 user: {service_preference: [registry, repo]}
 `
 
-	expRepo := readTestFile(t, "../testdata/expectations/repo.yml")
-	expRegistry := readTestFile(t, "../testdata/expectations/registry.yml")
+	expRepo := testutil.ReadFile(t, "../testdata/expectations/repo.yml")
+	expRegistry := testutil.ReadFile(t, "../testdata/expectations/registry.yml")
 
 	t.Run("repo preference", func(t *testing.T) {
 		config := preferRepo + serviceFiles
@@ -104,7 +106,7 @@ user: {service_preference: [registry, repo]}
 user_file: ../testdata/user-registry-ms-repo.yml
 `
 
-		exp := readTestFile(t, "../testdata/expectations/user-registry-ms-repo.yml")
+		exp := testutil.ReadFile(t, "../testdata/expectations/user-registry-ms-repo.yml")
 
 		assertComposed(t, config, exp, "user preference overrides orders")
 	})
@@ -131,7 +133,7 @@ user:
         volumes: [overdeps:/var/deps]
 `
 
-		exp := readTestFile(t, "../testdata/expectations/registry-user-override.yml")
+		exp := testutil.ReadFile(t, "../testdata/expectations/registry-user-override.yml")
 
 		assertComposed(t, config, exp, "user preference overrides orders")
 	})
@@ -144,7 +146,7 @@ user:
       disabled: true
 `
 
-		exp := readTestFile(t, "../testdata/expectations/user-registry-app-disabled.yml")
+		exp := testutil.ReadFile(t, "../testdata/expectations/user-registry-app-disabled.yml")
 
 		assertComposed(t, config, exp, "user disabled services")
 	})
@@ -189,7 +191,7 @@ user:
       config: remote
 `
 
-		exp := readTestFile(t, "../testdata/expectations/user-registry-ms-remote.yml")
+		exp := testutil.ReadFile(t, "../testdata/expectations/user-registry-ms-remote.yml")
 
 		projectConfig := assertComposed(t, config, exp, "service defs with secrets")
 

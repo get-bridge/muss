@@ -7,10 +7,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"gerrit.instructure.com/muss/testutil"
 )
 
 func TestConfigSave(t *testing.T) {
-	withTempDir(t, func(tmpdir string) {
+	testutil.WithTempDir(t, func(tmpdir string) {
 		os.Setenv("MUSS_USER_FILE", "muss.test.yaml")
 		defer os.Unsetenv("MUSS_USER_FILE")
 		os.Unsetenv("COMPOSE_FILE")
@@ -26,7 +28,7 @@ func TestConfigSave(t *testing.T) {
 			// no errors
 
 			// no compose file
-			assertNotExist(t, "docker-compose.yml")
+			testutil.NoFileExists(t, "docker-compose.yml")
 
 			SetConfig(map[string]interface{}{
 				"status": map[string]interface{}{
@@ -42,7 +44,7 @@ func TestConfigSave(t *testing.T) {
 			assert.Equal(t, cfg.Status.Exec, []string{"echo", "hi"}, "has config")
 			generateFiles(cfg)
 			// still no compose file
-			assertNotExist(t, "docker-compose.yml")
+			testutil.NoFileExists(t, "docker-compose.yml")
 		})
 
 		t.Run("config save", func(t *testing.T) {
@@ -118,9 +120,9 @@ func TestConfigSave(t *testing.T) {
 				ioutil.WriteFile(ProjectFile, yaml, 0644)
 			}
 
-			assertNotExist(t, "./foo")
-			assertNotExist(t, "./test-home/vol/file")
-			assertNotExist(t, "./pre-existing.file")
+			testutil.NoFileExists(t, "./foo")
+			testutil.NoFileExists(t, "./test-home/vol/file")
+			testutil.NoFileExists(t, "./pre-existing.file")
 			touch("./pre-existing.file")
 
 			var stderr bytes.Buffer
