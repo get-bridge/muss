@@ -59,15 +59,18 @@ func ExecuteRoot(rootCmd *cobra.Command, args []string) int {
 		// Print information about other errors.
 		fmt.Fprintln(stderr, "Error: ", err.Error())
 
-		// Print usage if it's a flag error
-		// TODO: Could this be any other type of error that we don't want to print usage for?
-		cmd, _, findErr := rootCmd.Find(args)
-		// If subcmd isn't found, print root command usage
-		if findErr != nil {
-			cmd = rootCmd
+		// An alternative to marking it a QuietError is to call
+		// rootCmd.SetFlagErrorFunc and wrap flag errors with a flagError type.
+		if _, ok := err.(*QuietError); !ok {
+			// Print usage if it's a flag error
+			cmd, _, findErr := rootCmd.Find(args)
+			// If subcmd isn't found, print root command usage
+			if findErr != nil {
+				cmd = rootCmd
+			}
+			fmt.Fprintln(stderr, "") // Print blank line between "Error:" and "Usage:".
+			fmt.Fprintln(stderr, cmd.UsageString())
 		}
-		fmt.Fprintln(stderr, "") // Print blank line between "Error:" and "Usage:".
-		fmt.Fprintln(stderr, cmd.UsageString())
 
 		return 1
 	}

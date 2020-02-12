@@ -24,7 +24,7 @@ Usage:
 `,
 		Args:               cobra.ArbitraryArgs,
 		DisableFlagParsing: true,
-		PreRun:             configSavePreRun,
+		PreRunE:            configSavePreRun(cfg),
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			return proc.Exec(append([]string{"docker-compose"}, args...))

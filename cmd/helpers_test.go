@@ -32,7 +32,7 @@ func runTestCommand(cfg *config.ProjectConfig, args []string) (string, string, e
 
 	// Don't write config files.
 	sub, _, _ := cmd.Find(args)
-	sub.PreRun = nil
+	sub.PreRunE = nil
 
 	err := cmd.Execute()
 

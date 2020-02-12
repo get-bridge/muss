@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	yaml "gopkg.in/yaml.v2"
 
+	rootcmd "gerrit.instructure.com/muss/cmd"
 	"gerrit.instructure.com/muss/config"
 )
 
@@ -36,13 +37,9 @@ Template examples:
   # Show all the options for service configs:
   '{{ range .service_definitions }}{{ range $k, $v := .configs }}{{ $k }}{{ "\n" }}{{ end }}{{end }}'
 `,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			err := processTemplate(format, cfg, cmd.OutOrStdout())
-			// Print the error rather than returning it
-			// so that we don't print the whole help string for template errorrs.
-			if err != nil {
-				fmt.Fprintln(cmd.ErrOrStderr(), "Error:", err)
-			}
+			return rootcmd.QuietErrorOrNil(err)
 		},
 	}
 

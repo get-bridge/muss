@@ -12,7 +12,7 @@ import (
 	"gerrit.instructure.com/muss/config"
 )
 
-func testShowCommand(t *testing.T, cfg *config.ProjectConfig, args []string) (string, string) {
+func testShowCommand(t *testing.T, cfg *config.ProjectConfig, args []string) (string, string, int) {
 	t.Helper()
 
 	var stdout, stderr strings.Builder
@@ -21,18 +21,22 @@ func testShowCommand(t *testing.T, cfg *config.ProjectConfig, args []string) (st
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stderr)
 
-	rootcmd.ExecuteRoot(cmd, append([]string{"config", "show"}, args...))
+	exitCode := rootcmd.ExecuteRoot(cmd, append([]string{"config", "show"}, args...))
 
-	return stdout.String(), stderr.String()
+	return stdout.String(), stderr.String(), exitCode
 }
 
 func showOut(t *testing.T, cfg *config.ProjectConfig, format string) string {
 	t.Helper()
 
-	stdout, stderr := testShowCommand(t, cfg, []string{"--format", format})
+	stdout, stderr, ec := testShowCommand(t, cfg, []string{"--format", format})
 
 	if stderr != "" {
 		t.Fatal("error processing template: ", stderr)
+	}
+
+	if ec != 0 {
+		t.Fatal("exited non zero: ", ec)
 	}
 
 	return stdout
@@ -41,10 +45,14 @@ func showOut(t *testing.T, cfg *config.ProjectConfig, format string) string {
 func showErr(t *testing.T, cfg *config.ProjectConfig, format string) string {
 	t.Helper()
 
-	stdout, stderr := testShowCommand(t, cfg, []string{"--format", format})
+	stdout, stderr, ec := testShowCommand(t, cfg, []string{"--format", format})
 
 	if stdout != "" {
 		t.Fatal("stdout:", stdout)
+	}
+
+	if ec != 1 {
+		t.Fatal("did not exit 1:", ec)
 	}
 
 	return stderr
@@ -137,7 +145,7 @@ func TestConfigShow(t *testing.T) {
 		config.SetConfig(nil)
 		cfg, _ := config.All()
 
-		stdout, stderr := testShowCommand(t, cfg, []string{"--format", `{{ range $k, $v := compose.services }}{{ $k }}{{ "." }}{{ $v.image }}{{ "\n" }}{{ end }}`})
+		stdout, stderr, ec := testShowCommand(t, cfg, []string{"--format", `{{ range $k, $v := compose.services }}{{ $k }}{{ "." }}{{ $v.image }}{{ "\n" }}{{ end }}`})
 
 		assert.Equal(t,
 			"a1.alpine\na2.alpine\n",
@@ -148,6 +156,8 @@ func TestConfigShow(t *testing.T) {
 			"muss project config 'muss.yaml' file not found.\n",
 			stderr,
 			"warns about no project config")
+
+		assert.Equal(t, 0, ec, "exit 0")
 	})
 
 	t.Run("empty config", func(t *testing.T) {
@@ -170,11 +180,15 @@ func TestConfigShow(t *testing.T) {
 		})
 		cfg, _ := config.All()
 
+		stderr := showErr(t, cfg, `{{`)
+
 		assert.Contains(t,
-			showErr(t, cfg, `{{`),
+			stderr,
 			`unexpected unclosed action in command`,
 			"error on stderr",
 		)
+
+		assert.NotContains(t, stderr, `Usage:`, "no usage")
 
 		assert.Contains(t,
 			showErr(t, cfg, `{{ yaml .user }}`),

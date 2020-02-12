@@ -14,7 +14,7 @@ func newPullCommand(cfg *config.ProjectConfig) *cobra.Command {
 `,
 		Args: cobra.ArbitraryArgs,
 		// TODO: ArgsInUseLine: "[service...]"
-		PreRun: configSavePreRun,
+		PreRunE: configSavePreRun(cfg),
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			// TODO: pull repos

@@ -12,7 +12,7 @@ func newPsCommand(cfg *config.ProjectConfig) *cobra.Command {
 		Short: "List containers",
 		Args:  cobra.ArbitraryArgs,
 		// TODO: ArgsInUseLine: "[service...]"
-		PreRun: configSavePreRun,
+		PreRunE: configSavePreRun(cfg),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return DelegateCmd(
 				cmd,

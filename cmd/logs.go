@@ -13,7 +13,7 @@ func newLogsCommand(cfg *config.ProjectConfig) *cobra.Command {
 		// Long
 		Args: cobra.ArbitraryArgs,
 		// TODO: ArgsInUseLine: "[service...]"
-		PreRun: configSavePreRun,
+		PreRunE: configSavePreRun(cfg),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return DelegateCmd(
 				cmd,

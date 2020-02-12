@@ -17,7 +17,7 @@ func newAttachCommand(cfg *config.ProjectConfig) *cobra.Command {
 		// Long
 		Args: cobra.ExactArgs(1),
 		// TODO: ArgsInUseLine: "service"
-		PreRun: configSavePreRun,
+		PreRunE: configSavePreRun(cfg),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			service := args[0]
 			cid, err := dockerContainerID(service)

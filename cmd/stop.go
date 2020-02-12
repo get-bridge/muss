@@ -15,7 +15,7 @@ func newStopCommand(cfg *config.ProjectConfig) *cobra.Command {
 They can be started again with "start".`,
 		Args: cobra.ArbitraryArgs,
 		// TODO: ArgsInUseLine: "[service...]"
-		PreRun: configSavePreRun,
+		PreRunE: configSavePreRun(cfg),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return DelegateCmd(
 				cmd,

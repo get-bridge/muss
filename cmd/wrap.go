@@ -29,7 +29,7 @@ Useful for testing project configuration, environment, and command execution.
 Usage: wrap [options] [COMMAND ARGS...]`,
 		Example: "  muss wrap bin/script args...",
 		Args:    cobra.ArbitraryArgs,
-		PreRun:  configSavePreRun,
+		PreRunE: configSavePreRun(cfg),
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			if useExec {

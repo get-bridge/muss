@@ -58,8 +58,8 @@ volumes). To prevent picking up changes, use the "--no-recreate" flag.
 If you want to force Compose to stop and recreate all containers, use the
 "--force-recreate" flag.
 `,
-		Args:   cobra.ArbitraryArgs,
-		PreRun: configSavePreRun,
+		Args:    cobra.ArbitraryArgs,
+		PreRunE: configSavePreRun(cfg),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 
 			stopAfter := true

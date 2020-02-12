@@ -18,7 +18,7 @@ can override this with "-v". To list all volumes, use "docker volume ls".
 Any data which is not in a volume will be lost.`,
 		Args: cobra.ArbitraryArgs,
 		// TODO: ArgsInUseLine: "[service...]"
-		PreRun: configSavePreRun,
+		PreRunE: configSavePreRun(cfg),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return DelegateCmd(
 				cmd,

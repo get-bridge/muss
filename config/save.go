@@ -115,6 +115,9 @@ func generateFiles(cfg *ProjectConfig) error {
 	wg.Wait()
 
 	if errs != nil && len(errs.Errors) > 0 {
+		if len(errs.Errors) == 1 {
+			return errs.Errors[0]
+		}
 		return errs.ErrorOrNil()
 	}
 

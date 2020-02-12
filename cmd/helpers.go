@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
 	"regexp"
 
@@ -18,11 +17,11 @@ import (
 
 var dc = "docker-compose"
 
-func configSavePreRun(cmd *cobra.Command, argv []string) {
-	if err := config.Save(); err != nil {
-		fmt.Print(err)
-		// Abort command (without printing usage).
-		os.Exit(1)
+func configSavePreRun(cfg *config.ProjectConfig) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, argv []string) error {
+
+		err := config.Save()
+		return QuietErrorOrNil(err)
 	}
 }
 
