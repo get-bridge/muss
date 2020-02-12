@@ -6,7 +6,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	cmdconfig "gerrit.instructure.com/muss/cmd/config"
 	config "gerrit.instructure.com/muss/config"
 )
 
@@ -32,7 +31,6 @@ func NewRootCommand(cfg *config.ProjectConfig) *cobra.Command {
 		SilenceErrors: true,
 		SilenceUsage:  true,
 	}
-	cmd.AddCommand(cmdconfig.NewCommand(cfg))
 	for _, f := range cmdBuilders {
 		cmd.AddCommand(f(cfg))
 	}

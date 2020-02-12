@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"gerrit.instructure.com/muss/cmd"
+	_ "gerrit.instructure.com/muss/cmd/config"
 	"gerrit.instructure.com/muss/proc"
 )
 

@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	rootcmd "gerrit.instructure.com/muss/cmd"
 	"gerrit.instructure.com/muss/config"
 )
 
@@ -24,7 +25,7 @@ func AddCommandBuilder(f CommandBuilder) {
 func NewCommand(cfg *config.ProjectConfig) *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "config",
-		Short: "muss configuration",
+		Short: "muss configuration commands",
 		Long:  `Work with muss configuration.`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			if cfg, err := config.All(); err != nil {
@@ -42,4 +43,8 @@ func NewCommand(cfg *config.ProjectConfig) *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	rootcmd.AddCommandBuilder(NewCommand)
 }
