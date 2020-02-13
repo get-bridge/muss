@@ -20,6 +20,7 @@ type ProjectConfig struct {
 	Secrets     []envLoader
 	ProjectFile string   `mapstructure:"-"`
 	LoadError   error    `mapstructure:"-"`
+	Warnings    []string `mapstructure:"-"`
 
 	composeConfig   map[string]interface{}
 	filesToGenerate FileGenMap

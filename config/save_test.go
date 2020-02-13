@@ -1,9 +1,9 @@
 package config
 
 import (
-	"bytes"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -123,9 +123,6 @@ func TestConfigSave(t *testing.T) {
 			testutil.NoFileExists(t, "./pre-existing.file")
 			touch("./pre-existing.file")
 
-			var stderr bytes.Buffer
-			SetStderr(&stderr)
-
 			cfg, _ := NewConfigFromDefaultFile()
 			err := cfg.Save()
 
@@ -162,7 +159,7 @@ func TestConfigSave(t *testing.T) {
 			assert.Equal(t, "hello", os.Getenv("MUSS_SECRET_TEST"), "loaded secret")
 			assert.Equal(t, "goodbye", os.Getenv("MUSS_SECRET_TEST_TWO"), "loaded second secret")
 
-			assert.Equal(t, "", stderr.String(), "no warnings")
+			assert.Equal(t, 0, len(cfg.Warnings), "no warnings")
 		})
 
 		setAndSaveTiny := func(cfgMap map[string]interface{}, expTarget string) string {
@@ -179,9 +176,6 @@ func TestConfigSave(t *testing.T) {
 					},
 				},
 			}
-			var stderr bytes.Buffer
-			SetStderr(&stderr)
-
 			cfg := newTestConfig(t, cfgMap)
 			cfg.ProjectFile = "test.file"
 
@@ -204,7 +198,7 @@ func TestConfigSave(t *testing.T) {
 				assert.EqualValues(t, exp, parsed, "Generated docker-compose yaml")
 			}
 
-			return stderr.String()
+			return strings.Join(cfg.Warnings, "\n")
 		}
 
 		t.Run("COMPOSE_FILE is set", func(t *testing.T) {
@@ -213,7 +207,7 @@ func TestConfigSave(t *testing.T) {
 
 			warning := setAndSaveTiny(map[string]interface{}{}, "docker-compose.yml")
 
-			assert.Equal(t, "COMPOSE_FILE is set but does not contain muss target 'docker-compose.yml'.\n", warning, "warning about COMPOSE_FILE")
+			assert.Equal(t, "COMPOSE_FILE is set but does not contain muss target 'docker-compose.yml'.", warning, "warning about COMPOSE_FILE")
 		})
 
 		t.Run("compose_file config", func(t *testing.T) {
@@ -228,7 +222,7 @@ func TestConfigSave(t *testing.T) {
 
 			warning := setAndSaveTiny(map[string]interface{}{"compose_file": "dc.test.yml"}, "dc.test.yml")
 
-			assert.Equal(t, "COMPOSE_FILE is set but does not contain muss target 'dc.test.yml'.\n", warning, "warning about COMPOSE_FILE")
+			assert.Equal(t, "COMPOSE_FILE is set but does not contain muss target 'dc.test.yml'.", warning, "warning about COMPOSE_FILE")
 		})
 
 		t.Run("COMPOSE_FILE warnings", func(t *testing.T) {
@@ -236,15 +230,12 @@ func TestConfigSave(t *testing.T) {
 			defer os.Unsetenv("COMPOSE_PATH_SEPARATOR")
 			os.Unsetenv("COMPOSE_FILE")
 
-			var stderr bytes.Buffer
-			SetStderr(&stderr)
-
 			cfg := newTestConfig(t, nil)
 
 			warning := func() string {
-				stderr.Reset()
+				cfg.Warnings = nil
 				cfg.checkComposeFileVar()
-				return stderr.String()
+				return strings.Join(cfg.Warnings, "\n")
 			}
 
 			assert.Equal(t, "", warning(), "no warning when unset")
@@ -257,7 +248,7 @@ func TestConfigSave(t *testing.T) {
 			assert.Equal(t, "", warning(), "no warning when included (alternate separator)")
 
 			os.Unsetenv("COMPOSE_PATH_SEPARATOR")
-			assert.Equal(t, "COMPOSE_FILE is set but does not contain muss target 'docker-compose.yml'.\n", warning(), "warning when not found")
+			assert.Equal(t, "COMPOSE_FILE is set but does not contain muss target 'docker-compose.yml'.", warning(), "warning when not found")
 		})
 
 		t.Run("ensureFile", func(t *testing.T) {

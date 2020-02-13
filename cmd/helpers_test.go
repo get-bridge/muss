@@ -39,7 +39,6 @@ func runTestCommand(cfg *config.ProjectConfig, args []string) (string, string, e
 	cmd := NewRootCommand(cfg)
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stderr)
-	config.SetStderr(&stderr)
 	cmd.SetArgs(args)
 
 	// Don't write config files.
