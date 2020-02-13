@@ -20,7 +20,7 @@ func parseAndCompose(yaml string) (map[string]interface{}, *ProjectConfig, error
 		return nil, nil, err
 	}
 
-	cfg, err := prepare(parsed)
+	cfg, err := NewConfigFromMap(parsed)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -39,7 +39,8 @@ func NewRootCommand(cfg *config.ProjectConfig) *cobra.Command {
 
 // Execute loads the config and runs the root command with the provided arguments.
 func Execute(args []string) int {
-	cfg, _ := config.All()
+	// We'll inspect the error later when we have command context.
+	cfg, _ := config.NewConfigFromDefaultFile()
 	cmd := NewRootCommand(cfg)
 	return ExecuteRoot(cmd, args)
 }

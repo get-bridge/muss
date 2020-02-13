@@ -13,7 +13,7 @@ import (
 func testRootCmd(args ...string) (int, string, string) {
 	var stdout, stderr strings.Builder
 
-	var cfg *config.ProjectConfig
+	cfg, _ := config.NewConfigFromMap(nil)
 	rootCmd := NewRootCommand(cfg)
 
 	rootCmd.SetOut(&stdout)

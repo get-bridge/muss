@@ -15,7 +15,7 @@ func newSaveCommand(cfg *config.ProjectConfig) *cobra.Command {
 		Short: "Generate new config files",
 		Long:  `Generate new ` + target + ` file.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := config.Save()
+			err := cfg.Save()
 			return rootcmd.QuietErrorOrNil(err)
 		},
 	}

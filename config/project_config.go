@@ -17,24 +17,30 @@ type ProjectConfig struct {
 	ProjectName              string                 `mapstructure:"project_name"`
 	ComposeFile              string                 `mapstructure:"compose_file"`
 
-	Secrets []envLoader
+	Secrets     []envLoader
+	ProjectFile string   `mapstructure:"-"`
+	LoadError   error    `mapstructure:"-"`
 
 	composeConfig   map[string]interface{}
 	filesToGenerate FileGenMap
 }
 
-// NewProjectConfig returns new ProjectConfig
-func NewProjectConfig() *ProjectConfig {
+func newProjectConfig() *ProjectConfig {
 	return &ProjectConfig{}
 }
 
-// NewProjectConfigFromMap returns new ProjectConfig from map[string]interface{}
-func NewProjectConfigFromMap(cfgMap map[string]interface{}) (*ProjectConfig, error) {
-	result := NewProjectConfig()
-	if err := mapToStruct(cfgMap, result); err != nil {
-		return nil, err
-	}
-	return result, nil
+// NewConfigFromMap returns new ProjectConfig from map[string]interface{}.
+func NewConfigFromMap(cfgMap map[string]interface{}) (*ProjectConfig, error) {
+	cfg := newProjectConfig()
+	cfg.LoadError = cfg.loadMap(cfgMap)
+	return cfg, cfg.LoadError
+}
+
+// NewConfigFromDefaultFile will attempt to load the config from files.
+func NewConfigFromDefaultFile() (*ProjectConfig, error) {
+	cfg := newProjectConfig()
+	cfg.loadDefaultFile()
+	return cfg, cfg.LoadError
 }
 
 // ToMap returns new map[string]interface{} from ProjectConfig

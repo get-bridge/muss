@@ -23,31 +23,29 @@ func TestConfigSave(t *testing.T) {
 		os.Setenv("MUSS_TEST_PASSPHRASE", "phrasey")
 
 		t.Run("no config", func(t *testing.T) {
-			SetConfig(nil)
-			generateFiles(nil)
-			// no errors
+			cfg := newTestConfig(t, nil)
+			err := cfg.Save()
+			assert.Nil(t, err)
 
 			// no compose file
 			testutil.NoFileExists(t, "docker-compose.yml")
 
-			SetConfig(map[string]interface{}{
+			cfg = newTestConfig(t, map[string]interface{}{
 				"status": map[string]interface{}{
 					"exec": []string{"echo", "hi"},
 				},
 			})
 
-			cfg, err := All()
-			if err != nil {
-				t.Fatal(err)
-			}
-
 			assert.Equal(t, cfg.Status.Exec, []string{"echo", "hi"}, "has config")
-			generateFiles(cfg)
+			err = cfg.Save()
+			assert.Nil(t, err)
 			// still no compose file
 			testutil.NoFileExists(t, "docker-compose.yml")
 		})
 
 		t.Run("config save", func(t *testing.T) {
+			os.Unsetenv("MUSS_FILE")
+			os.Unsetenv("MUSS_USER_FILE")
 
 			exp := map[string]interface{}{
 				"version": "3.6",
@@ -72,7 +70,7 @@ func TestConfigSave(t *testing.T) {
 					},
 				},
 			}
-			cfg := map[string]interface{}{
+			cfgMap := map[string]interface{}{
 				"secret_passphrase": "$MUSS_TEST_PASSPHRASE",
 				"service_definitions": []ServiceDef{
 					map[string]interface{}{
@@ -114,10 +112,10 @@ func TestConfigSave(t *testing.T) {
 				},
 			}
 
-			if yaml, err := yamlDump(cfg); err != nil {
+			if yaml, err := yamlDump(cfgMap); err != nil {
 				t.Fatal(err)
 			} else {
-				ioutil.WriteFile(ProjectFile, yaml, 0644)
+				ioutil.WriteFile(defaultProjectFile, yaml, 0644)
 			}
 
 			testutil.NoFileExists(t, "./foo")
@@ -128,10 +126,11 @@ func TestConfigSave(t *testing.T) {
 			var stderr bytes.Buffer
 			SetStderr(&stderr)
 
-			SetConfig(nil)
-			assert.Nil(t, project, "Project config not yet loaded") // prove that Save will load it.
-			Save()
-			assert.NotNil(t, project, "Save loads project config first")
+			cfg, _ := NewConfigFromDefaultFile()
+			err := cfg.Save()
+
+			assert.Equal(t, "$MUSS_TEST_PASSPHRASE", cfg.SecretPassphrase, "loaded")
+			assert.Nil(t, err, "no errors")
 
 			if written, err := ioutil.ReadFile("docker-compose.yml"); err != nil {
 				t.Fatalf("failed to open generated file: %s", err)
@@ -139,13 +138,13 @@ func TestConfigSave(t *testing.T) {
 
 				assert.Contains(t,
 					string(written),
-					"# To add new service definition files edit "+ProjectFile+".",
+					"# To add new service definition files edit muss.yaml.",
 					"contains generated comments",
 				)
 
 				assert.Contains(t,
 					string(written),
-					"# To configure the services you want to use edit "+UserFile+".",
+					"# To configure the services you want to use edit muss.user.yaml.",
 					"contains user file comments",
 				)
 
@@ -166,11 +165,11 @@ func TestConfigSave(t *testing.T) {
 			assert.Equal(t, "", stderr.String(), "no warnings")
 		})
 
-		setAndSaveTiny := func(cfg map[string]interface{}, expTarget string) string {
+		setAndSaveTiny := func(cfgMap map[string]interface{}, expTarget string) string {
 			exp := map[string]interface{}{
 				"version": "3.4",
 			}
-			cfg["service_definitions"] = []ServiceDef{
+			cfgMap["service_definitions"] = []ServiceDef{
 				map[string]interface{}{
 					"name": "app",
 					"configs": map[string]interface{}{
@@ -180,12 +179,13 @@ func TestConfigSave(t *testing.T) {
 					},
 				},
 			}
-			SetConfig(cfg)
-
 			var stderr bytes.Buffer
 			SetStderr(&stderr)
 
-			Save()
+			cfg := newTestConfig(t, cfgMap)
+			cfg.ProjectFile = "test.file"
+
+			cfg.Save()
 
 			if written, err := ioutil.ReadFile(expTarget); err != nil {
 				t.Fatalf("failed to open generated file: %s", err)
@@ -193,7 +193,7 @@ func TestConfigSave(t *testing.T) {
 
 				assert.Contains(t,
 					string(written),
-					"# To add new service definition files edit "+ProjectFile+".",
+					"# To add new service definition files edit test.file.",
 					"contains generated comments",
 				)
 
@@ -238,11 +238,12 @@ func TestConfigSave(t *testing.T) {
 
 			var stderr bytes.Buffer
 			SetStderr(&stderr)
-			SetConfig(map[string]interface{}{})
+
+			cfg := newTestConfig(t, nil)
 
 			warning := func() string {
 				stderr.Reset()
-				project.checkComposeFileVar()
+				cfg.checkComposeFileVar()
 				return stderr.String()
 			}
 

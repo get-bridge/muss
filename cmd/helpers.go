@@ -19,8 +19,7 @@ var dc = "docker-compose"
 
 func configSavePreRun(cfg *config.ProjectConfig) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, argv []string) error {
-
-		err := config.Save()
+		err := cfg.Save()
 		return QuietErrorOrNil(err)
 	}
 }

@@ -13,12 +13,8 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-// Save writes out configuration files to disk and returns any errors.
-func Save() error {
-	cfg, err := All()
-	if err != nil {
-		return err
-	}
+// Save writes out the generated config files to disk.
+func (cfg *ProjectConfig) Save() error {
 	return generateFiles(cfg)
 }
 

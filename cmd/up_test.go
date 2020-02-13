@@ -100,11 +100,9 @@ piyo
 			os.Setenv("MUSS_TEST_UP_LOGS", "1")
 			defer os.Unsetenv("MUSS_TEST_UP_LOGS")
 
-			config.SetConfig(nil)
-			cfg, _ := config.All()
-
 			args := []string{"-d", "--no-start"}
 
+			cfg := newTestConfig(t, nil)
 			for _, arg := range args {
 				stdout, stderr, err := runTestCommand(cfg, []string{"up", arg})
 
@@ -150,15 +148,13 @@ piyo
 			os.Setenv("MUSS_TEST_UP_LOGS", "1")
 			defer os.Unsetenv("MUSS_TEST_UP_LOGS")
 
-			config.SetConfig(map[string]interface{}{
+			cfg := newTestConfig(t, map[string]interface{}{
 				"status": map[string]interface{}{
 					"exec":        []string{"../testdata/bin/status"},
 					"interval":    "1.1s",
 					"line_format": "# %s",
 				},
 			})
-
-			cfg, _ := config.All()
 
 			stdout, stderr, err := runTestCommand(cfg, []string{"up"})
 
@@ -178,15 +174,13 @@ piyo
 			os.Setenv("MUSS_TEST_UP_LOGS", "1")
 			defer os.Unsetenv("MUSS_TEST_UP_LOGS")
 
-			config.SetConfig(map[string]interface{}{
+			cfg := newTestConfig(t, map[string]interface{}{
 				"status": map[string]interface{}{
 					"exec":        []string{"../testdata/bin/status", "prefix"},
 					"interval":    "1.1s",
 					"line_format": "# %s",
 				},
 			})
-
-			cfg, _ := config.All()
 
 			stdout, stderr, err := runTestCommand(cfg, []string{"up"})
 
@@ -207,15 +201,13 @@ piyo
 			os.Setenv("MUSS_TEST_REGISTRY_ERROR", "403")
 			defer os.Unsetenv("MUSS_TEST_REGISTRY_ERROR")
 
-			config.SetConfig(map[string]interface{}{
+			cfg := newTestConfig(t, map[string]interface{}{
 				"status": map[string]interface{}{
 					"exec":        []string{"../testdata/bin/status", "prefix"},
 					"interval":    "1.1s",
 					"line_format": "# %s",
 				},
 			})
-
-			cfg, _ := config.All()
 
 			stdout, stderr, err := runTestCommand(cfg, []string{"up"})
 
@@ -242,7 +234,7 @@ piyo
 			os.Setenv("MUSS_TEST_REGISTRY_ERROR", "build-403")
 			defer os.Unsetenv("MUSS_TEST_REGISTRY_ERROR")
 
-			config.SetConfig(map[string]interface{}{
+			cfg := newTestConfig(t, map[string]interface{}{
 				"service_definitions": []config.ServiceDef{
 					config.ServiceDef{
 						"name": "app",
@@ -258,8 +250,6 @@ piyo
 					},
 				},
 			})
-			defer config.SetConfig(nil)
-			cfg, _ := config.All()
 
 			stdout, stderr, err := runTestCommand(cfg, []string{"up", "--no-status"})
 

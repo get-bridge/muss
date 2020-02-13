@@ -47,7 +47,7 @@ svc2
 			os.Setenv("MUSS_TEST_REGISTRY_ERROR", "403")
 			defer os.Unsetenv("MUSS_TEST_REGISTRY_ERROR")
 
-			config.SetConfig(map[string]interface{}{
+			cfg := newTestConfig(t, map[string]interface{}{
 				"service_definitions": []config.ServiceDef{
 					config.ServiceDef{
 						"name": "app",
@@ -63,8 +63,6 @@ svc2
 					},
 				},
 			})
-			defer config.SetConfig(nil)
-			cfg, _ := config.All()
 
 			stdout, stderr, err := runTestCommand(cfg, []string{"build"})
 
@@ -78,7 +76,7 @@ svc2
 			os.Setenv("MUSS_TEST_REGISTRY_ERROR", "403")
 			defer os.Unsetenv("MUSS_TEST_REGISTRY_ERROR")
 
-			config.SetConfig(map[string]interface{}{
+			cfg := newTestConfig(t, map[string]interface{}{
 				"service_definitions": []config.ServiceDef{
 					config.ServiceDef{
 						"name": "app",
@@ -94,8 +92,6 @@ svc2
 					},
 				},
 			})
-			defer config.SetConfig(nil)
-			cfg, _ := config.All()
 
 			stdout, stderr, err := runTestCommand(cfg, []string{"build"})
 

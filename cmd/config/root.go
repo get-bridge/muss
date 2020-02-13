@@ -28,12 +28,8 @@ func NewCommand(cfg *config.ProjectConfig) *cobra.Command {
 		Short: "muss configuration commands",
 		Long:  `Work with muss configuration.`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			if cfg, err := config.All(); err != nil {
+			if err := cfg.LoadError; err != nil {
 				fmt.Fprintf(cmd.ErrOrStderr(), "error loading config: %s", err)
-			} else {
-				if cfg == nil {
-					fmt.Fprintf(cmd.ErrOrStderr(), "muss project config '%s' file not found.\n", config.ProjectFile)
-				}
 			}
 		},
 	}

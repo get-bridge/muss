@@ -28,8 +28,10 @@ func TestConfigSaveCommand(t *testing.T) {
 			newSaveCommand(nil).Long,
 			"default")
 
-		config.SetConfig(map[string]interface{}{"compose_file": "dc.muss.yml"})
-		cfg, _ := config.All()
+		cfg, err := config.NewConfigFromMap(map[string]interface{}{"compose_file": "dc.muss.yml"})
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		assert.Equal(t,
 			"Generate new dc.muss.yml file.",
@@ -40,7 +42,7 @@ func TestConfigSaveCommand(t *testing.T) {
 	t.Run("config save", func(t *testing.T) {
 		testutil.WithTempDir(t, func(dir string) {
 
-			config.SetConfig(map[string]interface{}{
+			cfg, err := config.NewConfigFromMap(map[string]interface{}{
 				"project_name": "s1",
 				"service_definitions": []map[string]interface{}{
 					map[string]interface{}{
@@ -53,7 +55,6 @@ func TestConfigSaveCommand(t *testing.T) {
 					},
 				},
 			})
-			cfg, err := config.All()
 			if err != nil {
 				t.Fatal(err)
 			}

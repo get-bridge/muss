@@ -10,74 +10,66 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-// SetConfig sets the global config to the provided arg
-// (used internally for testing).
-func SetConfig(cfg map[string]interface{}) error {
-	if cfg == nil {
-		project = nil
-		return nil
-	}
+var defaultProjectFile = "muss.yaml"
+var defaultUserFile = "muss.user.yaml"
 
-	var err error
-	project, err = prepare(cfg)
-	if err != nil {
-		return fmt.Errorf("Failed to process config: %w", err)
+func (cfg *ProjectConfig) loadDefaultFile() {
+	cfg.ProjectFile = os.Getenv("MUSS_FILE")
+	if cfg.ProjectFile == "" {
+		cfg.ProjectFile = defaultProjectFile
 	}
-
-	return nil
-}
-
-func load() error {
-	if cfgFile := os.Getenv("MUSS_FILE"); cfgFile != "" {
-		ProjectFile = cfgFile
-	}
-	UserFile = os.Getenv("MUSS_USER_FILE")
 
 	// If there is no config file do the best you can
 	// (allow muss to wrap docker-compose without a config file).
-	if _, err := os.Stat(ProjectFile); err != nil && os.IsNotExist(err) {
-		return nil
+	if _, err := os.Stat(cfg.ProjectFile); err != nil && os.IsNotExist(err) {
+		cfg.LoadError = fmt.Errorf("config file '%s' not found", cfg.ProjectFile)
+		return
 	}
 
-	object, err := readYamlFile(ProjectFile)
+	object, err := readYamlFile(cfg.ProjectFile)
 	if err != nil {
-		return fmt.Errorf("Failed to read config file '%s': %w", ProjectFile, err)
+		cfg.LoadError = fmt.Errorf("Failed to read config file '%s': %w", cfg.ProjectFile, err)
+		return
 	}
 
-	return SetConfig(object)
+	cfg.LoadError = cfg.loadMap(object)
 }
 
-func prepare(object map[string]interface{}) (*ProjectConfig, error) {
-	prepared, err := NewProjectConfigFromMap(object)
+func (cfg *ProjectConfig) loadMap(object map[string]interface{}) error {
+	if err := mapToStruct(object, cfg); err != nil {
+		return err
+	}
+
+	loaded, err := loadServiceDefs(cfg.ServiceFiles)
 	if err != nil {
-		return nil, err
+		return err
+	}
+	cfg.ServiceDefinitions = append(cfg.ServiceDefinitions, loaded...)
+
+	// Prefer env user file if present.
+	if envUserFile := os.Getenv("MUSS_USER_FILE"); envUserFile != "" {
+		cfg.UserFile = envUserFile
+	}
+	// If not set by env or project config use default.
+	if cfg.UserFile == "" {
+		cfg.UserFile = defaultUserFile
 	}
 
-	loaded, err := loadServiceDefs(prepared.ServiceFiles)
-	if err != nil {
-		return nil, err
-	}
-	prepared.ServiceDefinitions = append(prepared.ServiceDefinitions, loaded...)
-
-	if UserFile != "" {
-		prepared.UserFile = UserFile
-	}
-
-	if prepared.UserFile != "" {
-		if fileExists(prepared.UserFile) {
-			userMap, err := readYamlFile(prepared.UserFile)
+	if cfg.UserFile != "" {
+		if fileExists(cfg.UserFile) {
+			userMap, err := readYamlFile(cfg.UserFile)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			user, err := UserConfigFromMap(userMap)
 			if err != nil {
-				return nil, err
+				return err
 			}
-			prepared.User = user
+			cfg.User = user
 		}
 	}
 
-	return prepared, nil
+	return nil
 }
 
 func loadServiceDefs(files []string) ([]ServiceDef, error) {

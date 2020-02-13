@@ -21,8 +21,20 @@ func init() {
 	testbin = path.Join(cwd, "..", "testdata", "bin")
 }
 
+func newTestConfig(t *testing.T, cfgMap map[string]interface{}) *config.ProjectConfig {
+	cfg, err := config.NewConfigFromMap(cfgMap)
+	if err != nil {
+		t.Fatalf("unexpected config error: %s", err)
+	}
+	return cfg
+}
+
 func runTestCommand(cfg *config.ProjectConfig, args []string) (string, string, error) {
 	var stdout, stderr strings.Builder
+
+	if cfg == nil {
+		cfg, _ = config.NewConfigFromMap(nil)
+	}
 
 	cmd := NewRootCommand(cfg)
 	cmd.SetOut(&stdout)

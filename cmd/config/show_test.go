@@ -1,6 +1,7 @@
 package config
 
 import (
+	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -10,6 +11,7 @@ import (
 
 	rootcmd "gerrit.instructure.com/muss/cmd"
 	"gerrit.instructure.com/muss/config"
+	"gerrit.instructure.com/muss/testutil"
 )
 
 func testShowCommand(t *testing.T, cfg *config.ProjectConfig, args []string) (string, string, int) {
@@ -100,8 +102,10 @@ func TestConfigShow(t *testing.T) {
 	}
 
 	t.Run("config show", func(t *testing.T) {
-		config.SetConfig(cfgMap)
-		cfg, _ := config.All()
+		cfg, err := config.NewConfigFromMap(cfgMap)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		assert.Equal(t,
 			"3.5",
@@ -142,27 +146,18 @@ func TestConfigShow(t *testing.T) {
 			os.Chdir(path.Join(dir, "..", "..", "testdata", "no-muss"))
 		}
 
-		config.SetConfig(nil)
-		cfg, _ := config.All()
+		cfg, _ := config.NewConfigFromMap(nil)
 
-		stdout, stderr, ec := testShowCommand(t, cfg, []string{"--format", `{{ range $k, $v := compose.services }}{{ $k }}{{ "." }}{{ $v.image }}{{ "\n" }}{{ end }}`})
+		stdout := showOut(t, cfg, `{{ range $k, $v := compose.services }}{{ $k }}{{ "." }}{{ $v.image }}{{ "\n" }}{{ end }}`)
 
 		assert.Equal(t,
 			"a1.alpine\na2.alpine\n",
 			stdout,
 			"compose config without service defs")
-
-		assert.Equal(t,
-			"muss project config 'muss.yaml' file not found.\n",
-			stderr,
-			"warns about no project config")
-
-		assert.Equal(t, 0, ec, "exit 0")
 	})
 
 	t.Run("empty config", func(t *testing.T) {
-		config.SetConfig(map[string]interface{}{})
-		cfg, _ := config.All()
+		cfg, _ := config.NewConfigFromMap(nil)
 
 		assert.Equal(t,
 			"",
@@ -171,14 +166,16 @@ func TestConfigShow(t *testing.T) {
 	})
 
 	t.Run("config show errors", func(t *testing.T) {
-		config.SetConfig(map[string]interface{}{
+		cfg, err := config.NewConfigFromMap(map[string]interface{}{
 			"user": map[string]interface{}{
 				"override": map[string]interface{}{
 					"yamlbreaker": func() {},
 				},
 			},
 		})
-		cfg, _ := config.All()
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		stderr := showErr(t, cfg, `{{`)
 
@@ -195,5 +192,68 @@ func TestConfigShow(t *testing.T) {
 			`cannot marshal type: func()`,
 			"yaml() function error on stderr",
 		)
+	})
+
+	t.Run("show config loading error", func(t *testing.T) {
+		cfg, err := config.NewConfigFromMap(map[string]interface{}{
+			"user_file": []string{"foo"},
+		})
+
+		expErr := `expected type 'string', got`
+		assert.Contains(t, err.Error(), expErr)
+
+		stdout, stderr, ec := testShowCommand(t, cfg, []string{"--format", `{{ "hi" }}`})
+
+		assert.Contains(t,
+			stderr,
+			expErr,
+			"error on stderr",
+		)
+
+		assert.Equal(t, "hi", stdout, "format still works")
+		assert.Equal(t, 0, ec, "exit 0")
+	})
+
+	t.Run("show file load warnings", func(t *testing.T) {
+		testutil.WithTempDir(t, func(tmpdir string) {
+			t.Run("missing file", func(t *testing.T) {
+				testutil.NoFileExists(t, "muss.yaml")
+				cfg, err := config.NewConfigFromDefaultFile()
+
+				expErr := `config file 'muss.yaml' not found`
+				assert.Equal(t, expErr, err.Error())
+
+				stdout, stderr, ec := testShowCommand(t, cfg, []string{"--format", `{{ "hi" }}`})
+
+				assert.Equal(t,
+					"error loading config: "+expErr,
+					stderr,
+					"error on stderr",
+				)
+
+				assert.Equal(t, "hi", stdout, "format still works")
+				assert.Equal(t, 0, ec, "exit 0")
+			})
+
+			t.Run("malformed yaml", func(t *testing.T) {
+				ioutil.WriteFile("muss.yaml", []byte("---\n{"), 0600)
+
+				cfg, err := config.NewConfigFromDefaultFile()
+
+				expErr := `Failed to read config file 'muss.yaml': yaml: line 2:`
+				assert.Contains(t, err.Error(), expErr)
+
+				stdout, stderr, ec := testShowCommand(t, cfg, []string{"--format", `{{ "hi" }}`})
+
+				assert.Contains(t,
+					stderr,
+					"error loading config: "+expErr,
+					"error on stderr",
+				)
+
+				assert.Equal(t, "hi", stdout, "format still works")
+				assert.Equal(t, 0, ec, "exit 0")
+			})
+		})
 	})
 }

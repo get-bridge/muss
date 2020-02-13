@@ -49,10 +49,6 @@ Template examples:
 }
 
 func processTemplate(format string, cfg *config.ProjectConfig, writer io.Writer) error {
-	if cfg == nil {
-		cfg = &config.ProjectConfig{}
-	}
-
 	cfgMap, err := cfg.ToMap()
 	if err != nil {
 		panic(err)

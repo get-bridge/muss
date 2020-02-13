@@ -383,7 +383,7 @@ func (cfg *ProjectConfig) composeFileBytes(dcc map[string]interface{}) ([]byte, 
 	content := []byte(`#
 # THIS FILE IS GENERATED!
 #
-# To add new service definition files edit ` + ProjectFile + `.
+# To add new service definition files edit ` + cfg.ProjectFile + `.
 #
 `)
 

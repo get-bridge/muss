@@ -10,7 +10,7 @@ import (
 )
 
 func assertHasSubCommand(t *testing.T, args ...string) {
-	var cfg *config.ProjectConfig
+	cfg, _ := config.NewConfigFromMap(nil)
 	rootCmd := cmd.NewRootCommand(cfg)
 	found, _, err := rootCmd.Find(args)
 	assert.Nil(t, err)
