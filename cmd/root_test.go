@@ -34,8 +34,8 @@ func getLines(s string, want int) []string {
 }
 
 func TestRootCommand(t *testing.T) {
-	withTestPath(t, func(*testing.T) {
-		t.Run("bad flag", func(*testing.T) {
+	withTestPath(t, func(t *testing.T) {
+		t.Run("bad flag", func(t *testing.T) {
 			exitCode, stdout, stderr := testRootCmd("--foo")
 
 			assert.Equal(t, 1, exitCode, "exit 1")
@@ -46,7 +46,7 @@ func TestRootCommand(t *testing.T) {
 			)
 		})
 
-		t.Run("bad subcmd flag", func(*testing.T) {
+		t.Run("bad subcmd flag", func(t *testing.T) {
 			exitCode, stdout, stderr := testRootCmd("wrap", "--foo")
 
 			assert.Equal(t, 1, exitCode, "exit 1")
@@ -57,7 +57,7 @@ func TestRootCommand(t *testing.T) {
 			)
 		})
 
-		t.Run("non-zero delegated command exit", func(*testing.T) {
+		t.Run("non-zero delegated command exit", func(t *testing.T) {
 			os.Setenv("MUSS_TEST_DC_ERROR", "2")
 			defer os.Unsetenv("MUSS_TEST_DC_ERROR")
 			exitCode, stdout, stderr := testRootCmd("pull")

@@ -10,8 +10,8 @@ import (
 )
 
 func TestBuildCommand(t *testing.T) {
-	withTestPath(t, func(*testing.T) {
-		t.Run("all args pass through", func(*testing.T) {
+	withTestPath(t, func(t *testing.T) {
+		t.Run("all args pass through", func(t *testing.T) {
 			stdout, stderr, err := runTestCommand(nil, []string{
 				"build",
 				"--compress",
@@ -43,7 +43,7 @@ svc2
 			assert.Equal(t, expOut, stdout)
 		})
 
-		t.Run("build with private registry 403 with service def", func(*testing.T) {
+		t.Run("build with private registry 403 with service def", func(t *testing.T) {
 			os.Setenv("MUSS_TEST_REGISTRY_ERROR", "403")
 			defer os.Unsetenv("MUSS_TEST_REGISTRY_ERROR")
 
@@ -72,7 +72,7 @@ svc2
 			assert.Equal(t, expOut, stdout)
 		})
 
-		t.Run("build with private registry 403 with unknown registry", func(*testing.T) {
+		t.Run("build with private registry 403 with unknown registry", func(t *testing.T) {
 			os.Setenv("MUSS_TEST_REGISTRY_ERROR", "403")
 			defer os.Unsetenv("MUSS_TEST_REGISTRY_ERROR")
 
@@ -101,7 +101,7 @@ svc2
 			assert.Equal(t, expOut, stdout)
 		})
 
-		t.Run("build with private registry basic auth error", func(*testing.T) {
+		t.Run("build with private registry basic auth error", func(t *testing.T) {
 			os.Setenv("MUSS_TEST_REGISTRY_ERROR", "no-basic-auth")
 			defer os.Unsetenv("MUSS_TEST_REGISTRY_ERROR")
 

@@ -9,8 +9,8 @@ import (
 )
 
 func TestRunCommand(t *testing.T) {
-	withTestPath(t, func(*testing.T) {
-		t.Run("all args pass through", func(*testing.T) {
+	withTestPath(t, func(t *testing.T) {
+		t.Run("all args pass through", func(t *testing.T) {
 			args := testRunArgs(t, []string{
 				"-d",
 				"--name", "foo",

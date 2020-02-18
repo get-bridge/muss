@@ -12,8 +12,8 @@ import (
 )
 
 func TestUpCommand(t *testing.T) {
-	withTestPath(t, func(*testing.T) {
-		t.Run("all args pass through", func(*testing.T) {
+	withTestPath(t, func(t *testing.T) {
+		t.Run("all args pass through", func(t *testing.T) {
 			stdout, stderr, err := runTestCommand(nil, []string{
 				"up",
 				"--no-status",
@@ -62,7 +62,7 @@ svc
 			assert.Equal(t, expOut, stdout)
 		})
 
-		t.Run("stop all", func(*testing.T) {
+		t.Run("stop all", func(t *testing.T) {
 			stdout, stderr, err := runTestCommand(nil, []string{"up"})
 
 			expOut := term.AnsiEraseToEnd +
@@ -78,7 +78,7 @@ svc
 			assert.Equal(t, expOut, stdout)
 		})
 
-		t.Run("stop selected", func(*testing.T) {
+		t.Run("stop selected", func(t *testing.T) {
 			stdout, stderr, err := runTestCommand(nil, []string{"up", "--no-status", "hoge", "piyo"})
 
 			expOut := `docker-compose
@@ -96,7 +96,7 @@ piyo
 			assert.Equal(t, expOut, stdout)
 		})
 
-		t.Run("up without starting in foreground", func(*testing.T) {
+		t.Run("up without starting in foreground", func(t *testing.T) {
 			os.Setenv("MUSS_TEST_UP_LOGS", "1")
 			defer os.Unsetenv("MUSS_TEST_UP_LOGS")
 
@@ -114,7 +114,7 @@ piyo
 			}
 		})
 
-		t.Run("up --no-status", func(*testing.T) {
+		t.Run("up --no-status", func(t *testing.T) {
 			os.Setenv("MUSS_TEST_UP_LOGS", "1")
 			defer os.Unsetenv("MUSS_TEST_UP_LOGS")
 
@@ -127,7 +127,7 @@ piyo
 			assert.Equal(t, expOut, stdout)
 		})
 
-		t.Run("up without muss.yaml", func(*testing.T) {
+		t.Run("up without muss.yaml", func(t *testing.T) {
 			os.Setenv("MUSS_TEST_UP_LOGS", "1")
 			defer os.Unsetenv("MUSS_TEST_UP_LOGS")
 
@@ -144,7 +144,7 @@ piyo
 			assert.Equal(t, expOut, stdout)
 		})
 
-		t.Run("up with status", func(*testing.T) {
+		t.Run("up with status", func(t *testing.T) {
 			os.Setenv("MUSS_TEST_UP_LOGS", "1")
 			defer os.Unsetenv("MUSS_TEST_UP_LOGS")
 
@@ -170,7 +170,7 @@ piyo
 			assert.Equal(t, expOut, stdout)
 		})
 
-		t.Run("up with multi line status", func(*testing.T) {
+		t.Run("up with multi line status", func(t *testing.T) {
 			os.Setenv("MUSS_TEST_UP_LOGS", "1")
 			defer os.Unsetenv("MUSS_TEST_UP_LOGS")
 
@@ -197,7 +197,7 @@ piyo
 			assert.Equal(t, expOut, stdout)
 		})
 
-		t.Run("up with status and private registry 403", func(*testing.T) {
+		t.Run("up with status and private registry 403", func(t *testing.T) {
 			os.Setenv("MUSS_TEST_REGISTRY_ERROR", "403")
 			defer os.Unsetenv("MUSS_TEST_REGISTRY_ERROR")
 
@@ -218,7 +218,7 @@ piyo
 			assert.Equal(t, expOut, stdout)
 		})
 
-		t.Run("up without status and private registry basic-auth error", func(*testing.T) {
+		t.Run("up without status and private registry basic-auth error", func(t *testing.T) {
 			os.Setenv("MUSS_TEST_REGISTRY_ERROR", "no-basic-auth")
 			defer os.Unsetenv("MUSS_TEST_REGISTRY_ERROR")
 
@@ -230,7 +230,7 @@ piyo
 			assert.Equal(t, expOut, stdout)
 		})
 
-		t.Run("up with private registry 403 on build", func(*testing.T) {
+		t.Run("up with private registry 403 on build", func(t *testing.T) {
 			os.Setenv("MUSS_TEST_REGISTRY_ERROR", "build-403")
 			defer os.Unsetenv("MUSS_TEST_REGISTRY_ERROR")
 
@@ -259,7 +259,7 @@ piyo
 			assert.Equal(t, expOut, stdout)
 		})
 
-		t.Run("up with private registry cred-helper stack trach", func(*testing.T) {
+		t.Run("up with private registry cred-helper stack trach", func(t *testing.T) {
 			os.Setenv("MUSS_TEST_REGISTRY_ERROR", "cred-helper")
 			defer os.Unsetenv("MUSS_TEST_REGISTRY_ERROR")
 

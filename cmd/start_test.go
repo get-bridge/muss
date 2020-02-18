@@ -7,8 +7,8 @@ import (
 )
 
 func TestStartCommand(t *testing.T) {
-	withTestPath(t, func(*testing.T) {
-		t.Run("no args", func(*testing.T) {
+	withTestPath(t, func(t *testing.T) {
+		t.Run("no args", func(t *testing.T) {
 			stdout, stderr, err := runTestCommand(nil, []string{"start"})
 
 			expOut := `docker-compose

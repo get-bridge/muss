@@ -7,7 +7,7 @@ import (
 )
 
 func TestCmdOutput(t *testing.T) {
-	t.Run("returns stdout/err", func(*testing.T) {
+	t.Run("returns stdout/err", func(t *testing.T) {
 		stdout, stderr, err := CmdOutput("/bin/sh", "-c", "echo err >&2; echo out")
 
 		assert.Equal(t, "err", stderr)
@@ -15,7 +15,7 @@ func TestCmdOutput(t *testing.T) {
 		assert.Nil(t, err)
 	})
 
-	t.Run("returns err", func(*testing.T) {
+	t.Run("returns err", func(t *testing.T) {
 		stdout, stderr, err := CmdOutput("/bin/sh", "-c", "printf 'a\nb\n' >&2; echo out; echo more; echo; exit 1")
 
 		assert.Equal(t, "a\nb", stderr)

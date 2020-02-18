@@ -7,8 +7,8 @@ import (
 )
 
 func TestDownCommand(t *testing.T) {
-	withTestPath(t, func(*testing.T) {
-		t.Run("all args pass through", func(*testing.T) {
+	withTestPath(t, func(t *testing.T) {
+		t.Run("all args pass through", func(t *testing.T) {
 			stdout, stderr, err := runTestCommand(nil, []string{
 				"down",
 				"--rmi=local",

@@ -7,9 +7,9 @@ import (
 )
 
 func TestPsCommand(t *testing.T) {
-	withTestPath(t, func(*testing.T) {
+	withTestPath(t, func(t *testing.T) {
 		// Test that any valid dc args pass through.
-		t.Run("all args pass through", func(*testing.T) {
+		t.Run("all args pass through", func(t *testing.T) {
 			stdout, stderr, err := runTestCommand(nil, []string{
 				"ps",
 				"-q",
@@ -34,7 +34,7 @@ svc
 			assert.Equal(t, expOut, stdout)
 		})
 
-		t.Run("some args", func(*testing.T) {
+		t.Run("some args", func(t *testing.T) {
 			stdout, stderr, err := runTestCommand(nil, []string{
 				"ps",
 				"--all",

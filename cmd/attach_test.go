@@ -8,9 +8,9 @@ import (
 )
 
 func TestAttachCommand(t *testing.T) {
-	withTestPath(t, func(*testing.T) {
+	withTestPath(t, func(t *testing.T) {
 		// Test that any valid dc args pass through.
-		t.Run("all args pass through", func(*testing.T) {
+		t.Run("all args pass through", func(t *testing.T) {
 			stdout, stderr, err := runTestCommand(nil, []string{
 				"attach",
 				"--detach-keys", "alt-q",
@@ -33,7 +33,7 @@ some:svc:cid
 			assert.Equal(t, expOut, stdout)
 		})
 
-		t.Run("no flags", func(*testing.T) {
+		t.Run("no flags", func(t *testing.T) {
 			stdout, stderr, err := runTestCommand(nil, []string{"attach", "foo"})
 
 			expOut := `docker
@@ -49,7 +49,7 @@ some:foo:cid
 			assert.Equal(t, expOut, stdout)
 		})
 
-		t.Run("index", func(*testing.T) {
+		t.Run("index", func(t *testing.T) {
 			os.Setenv("MUSS_TEST_PS_SCALE", "1")
 			defer os.Unsetenv("MUSS_TEST_PS_SCALE")
 
@@ -68,7 +68,7 @@ some:foo:cid
 			assert.Equal(t, expOut, stdout)
 		})
 
-		t.Run("index=2", func(*testing.T) {
+		t.Run("index=2", func(t *testing.T) {
 			os.Setenv("MUSS_TEST_PS_SCALE", "1")
 			defer os.Unsetenv("MUSS_TEST_PS_SCALE")
 

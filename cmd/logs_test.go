@@ -7,8 +7,8 @@ import (
 )
 
 func TestLogsCommand(t *testing.T) {
-	withTestPath(t, func(*testing.T) {
-		t.Run("all args pass through", func(*testing.T) {
+	withTestPath(t, func(t *testing.T) {
+		t.Run("all args pass through", func(t *testing.T) {
 			stdout, stderr, err := runTestCommand(nil, []string{
 				"logs",
 				"--no-color",
@@ -34,7 +34,7 @@ web
 			assert.Equal(t, expOut, stdout)
 		})
 
-		t.Run("some args", func(*testing.T) {
+		t.Run("some args", func(t *testing.T) {
 			stdout, stderr, err := runTestCommand(nil, []string{
 				"logs",
 				"-f",
@@ -56,7 +56,7 @@ web
 			assert.Equal(t, expOut, stdout)
 		})
 
-		t.Run("no args", func(*testing.T) {
+		t.Run("no args", func(t *testing.T) {
 			stdout, stderr, err := runTestCommand(nil, []string{"logs"})
 
 			expOut := `docker-compose

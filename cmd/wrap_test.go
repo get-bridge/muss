@@ -12,8 +12,8 @@ import (
 )
 
 func TestWrapCommand(t *testing.T) {
-	withTestPath(t, func(*testing.T) {
-		t.Run("multiple commands", func(*testing.T) {
+	withTestPath(t, func(t *testing.T) {
+		t.Run("multiple commands", func(t *testing.T) {
 			stdout, stderr, err := runTestCommand(nil, []string{
 				"wrap",
 				"-c", "echo foo",
@@ -32,8 +32,7 @@ func TestWrapCommand(t *testing.T) {
 			assert.Equal(t, expOut, strings.Join(actual, ""))
 		})
 
-		t.Run("wait for processes", func(*testing.T) {
-
+		t.Run("wait for processes", func(t *testing.T) {
 			// Give the cmd 1s to start up then send signal.
 			go func() {
 				time.Sleep(1 * time.Second)
@@ -54,7 +53,7 @@ func TestWrapCommand(t *testing.T) {
 			assert.Equal(t, expOut, stdout, "got output from all")
 		})
 
-		t.Run("usage errors", func(*testing.T) {
+		t.Run("usage errors", func(t *testing.T) {
 
 			assert.Contains(t, errFromWrapCmd(t, "-c", "echo", "--exec"),
 				"--exec and -c are mutually exclusive")
