@@ -1,5 +1,5 @@
 docker_image = "golang:1.13"
-docker_volume = "muss_go_mods"
+docker_volume = "muss_go_mods${env.BUILD_NUMBER}"
 
 def drun(docker_args, cmd) {
   sh """
