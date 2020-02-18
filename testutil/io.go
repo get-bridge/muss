@@ -50,3 +50,12 @@ func ReadFile(t *testing.T, path string) string {
 	}
 	return string(content)
 }
+
+// TempFile returns a TempFile via ioutil and calls t.Fatal on error.
+func TempFile(t *testing.T, dir, pattern string) *os.File {
+	tmpfile, err := ioutil.TempFile(dir, pattern)
+	if err != nil {
+		t.Fatalf("error making tempfile '%s/%s': %s", dir, pattern, err)
+	}
+	return tmpfile
+}

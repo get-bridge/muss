@@ -100,6 +100,24 @@ func TestRunCommand(t *testing.T) {
 
 			assert.Equal(t, exp, args)
 		})
+
+		t.Run("--rm works", func(t *testing.T) {
+			args := testRunArgs(t, []string{
+				"--rm",
+				"svc",
+				"foo",
+			})
+
+			exp := []string{
+				"docker-compose",
+				"run",
+				"--rm",
+				"svc",
+				"foo",
+			}
+
+			assert.Equal(t, exp, args)
+		})
 	})
 }
 

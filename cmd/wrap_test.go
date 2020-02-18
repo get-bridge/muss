@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"gerrit.instructure.com/muss/proc"
 )
 
 func TestWrapCommand(t *testing.T) {
@@ -51,6 +53,45 @@ func TestWrapCommand(t *testing.T) {
 			assert.Nil(t, err)
 			assert.Equal(t, "c\n", stderr)
 			assert.Equal(t, expOut, stdout, "got output from all")
+		})
+
+		t.Run("exec", func(t *testing.T) {
+			stdout, stderr, err := runTestCommand(nil, []string{
+				"wrap",
+				"--exec", "echo", "foo",
+			})
+
+			assert.Nil(t, err)
+			assert.Equal(t, "", stderr)
+			assert.Equal(t, "", stdout)
+
+			assert.Equal(t, []string{"echo", "foo"}, proc.LastExecArgv)
+		})
+
+		t.Run("shell", func(t *testing.T) {
+			shell := os.Getenv("SHELL")
+			defer os.Setenv("SHELL", shell)
+			os.Unsetenv("SHELL")
+
+			stdout, stderr, err := runTestCommand(nil, []string{
+				"wrap",
+				"-c", "echo $0",
+			})
+
+			assert.Nil(t, err)
+			assert.Equal(t, "", stderr)
+			assert.Equal(t, "/bin/sh\n", stdout, "defaults to /bin/sh")
+
+			os.Setenv("SHELL", "sh")
+
+			stdout, stderr, err = runTestCommand(nil, []string{
+				"wrap",
+				"-c", "echo $0",
+			})
+
+			assert.Nil(t, err)
+			assert.Equal(t, "", stderr)
+			assert.Equal(t, "sh\n", stdout, "defaults to $SHELL")
 		})
 
 		t.Run("usage errors", func(t *testing.T) {

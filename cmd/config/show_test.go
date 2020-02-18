@@ -83,6 +83,7 @@ func TestConfigShow(t *testing.T) {
 		},
 	}
 	cfgMap := map[string]interface{}{
+		"project_name": "the_hunt",
 		"user": map[string]interface{}{
 			"services": map[string]interface{}{
 				"foo": map[string]interface{}{
@@ -108,9 +109,19 @@ func TestConfigShow(t *testing.T) {
 		}
 
 		assert.Equal(t,
+			"the_hunt",
+			showOut(t, cfg, "{{ .project_name }}"),
+			"dot context")
+
+		assert.Equal(t,
+			"the_hunt",
+			showOut(t, cfg, "{{ project.project_name }}"),
+			"project function")
+
+		assert.Equal(t,
 			"3.5",
 			showOut(t, cfg, "{{ compose.version }}"),
-			"basic")
+			"compose function")
 
 		assert.Equal(t,
 			"<FOO = bar>",
