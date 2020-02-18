@@ -6,15 +6,15 @@ import (
 	"syscall"
 )
 
-func setupSignals() chan os.Signal {
-	c := make(chan os.Signal, 1)
-
+func setupSignals(c chan os.Signal) {
 	signals := []os.Signal{syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM}
 	for _, sig := range signals {
 		if !signal.Ignored(sig) {
 			signal.Notify(c, sig)
 		}
 	}
+}
 
-	return c
+func restoreSignals(c chan os.Signal) {
+	signal.Stop(c)
 }

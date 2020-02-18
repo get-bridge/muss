@@ -16,10 +16,11 @@ type StreamFilter interface {
 
 // Delegator holds readers/writers to which to delegate command output.
 type Delegator struct {
-	Stdin  io.Reader
-	Stdout io.Writer
-	Stderr io.Writer
-	DoneCh chan bool
+	Stdin    io.Reader
+	Stdout   io.Writer
+	Stderr   io.Writer
+	DoneCh   chan bool
+	SignalCh chan os.Signal
 
 	stdoutFilter StreamFilter
 	stderrFilter StreamFilter
@@ -107,12 +108,16 @@ func (d *Delegator) Delegate(commands ...*exec.Cmd) (err error) {
 		}(cmd)
 	}
 
-	signals := setupSignals()
+	if d.SignalCh == nil {
+		d.SignalCh = make(chan os.Signal, 1)
+	}
+	setupSignals(d.SignalCh)
+	defer restoreSignals(d.SignalCh)
 	finished := 0
 
 	for {
 		select {
-		case sig := <-signals:
+		case sig := <-d.SignalCh:
 			// Let listening go routines know that we are going to exit.
 			if d.DoneCh != nil {
 				close(d.DoneCh)
