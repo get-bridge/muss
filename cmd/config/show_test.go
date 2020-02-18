@@ -237,7 +237,7 @@ func TestConfigShow(t *testing.T) {
 				stdout, stderr, ec := testShowCommand(t, cfg, []string{"--format", `{{ "hi" }}`})
 
 				assert.Equal(t,
-					"error loading config: "+expErr,
+					"error loading config: "+expErr+"\n",
 					stderr,
 					"error on stderr",
 				)

@@ -29,7 +29,7 @@ func NewCommand(cfg *config.ProjectConfig) *cobra.Command {
 		Long:  `Work with muss configuration.`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			if err := cfg.LoadError; err != nil {
-				fmt.Fprintf(cmd.ErrOrStderr(), "error loading config: %s", err)
+				fmt.Fprintf(cmd.ErrOrStderr(), "error loading config: %s\n", err)
 			}
 		},
 	}
