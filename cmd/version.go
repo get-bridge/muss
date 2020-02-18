@@ -21,7 +21,7 @@ func newVersionCommand(_ *config.ProjectConfig) *cobra.Command {
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
 			if short {
-				fmt.Println(Version)
+				fmt.Fprintln(cmd.OutOrStdout(), Version)
 				return
 			}
 

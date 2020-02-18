@@ -27,6 +27,16 @@ docker client {{ .Client.Version }}{{ "\n" }}docker server {{ .Server.Version }}
 			assert.Equal(t, expOut, stdout)
 		})
 
+		t.Run("short", func(*testing.T) {
+			stdout, stderr, err := runTestCommand(nil, []string{"version", "--short"})
+
+			expOut := "testing\n"
+
+			assert.Nil(t, err)
+			assert.Equal(t, "", stderr)
+			assert.Equal(t, expOut, stdout)
+		})
+
 		t.Run("errors", func(*testing.T) {
 			os.Setenv("MUSS_TEST_DOCKER_VERSION_ERROR", "1")
 			defer os.Unsetenv("MUSS_TEST_DOCKER_VERSION_ERROR")
