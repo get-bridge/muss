@@ -96,6 +96,7 @@ configs:
       FOO_TOKEN: {shh: ["token"]}
     include:
       - _base
+      - file: sd-base.yml
   bar:
     include:
       - _base
@@ -121,6 +122,7 @@ configs:
 				"service_definitions": []interface{}{
 					map[string]interface{}{
 						"name": "sd",
+						"file": "sd.yml",
 						"configs": map[string]interface{}{
 							"_base": map[string]interface{}{
 								"version": "3.1",
@@ -128,6 +130,9 @@ configs:
 							"foo": map[string]interface{}{
 								"include": []interface{}{
 									"_base",
+									map[string]interface{}{
+										"file": "sd-base.yml",
+									},
 								},
 								"secrets": map[string]interface{}{
 									"FOO_TOKEN": map[string]interface{}{

@@ -259,8 +259,10 @@ the option will be chosen in this order:
 - the first of any `default_service_preference`
 
 The body of a service config can contain the following:
-- "include" is a list of other config names to merge in before this one
-  (merging always overwrites)
+- "include" is a list of items to merge in before the rest of the map
+and can be:
+  - a string referring to another config name
+  - a map of `file: path` to read in a file (relative to muss.yaml)
 - "secrets" is a list of secrets to load
 - "services" is a subset of the "services" section of a docker-compose
   configuration... it will be passed through.
@@ -293,9 +295,12 @@ The body of a service config can contain the following:
               APP_ENV: 'development'
 
       local:
-        # A config can include other configs that will be merged in first.
         include:
+          # A config can start by including other maps that will be merged in first.
+          # This can be the name of another config
           - _base
+          # or the contents of another yaml file.
+          - file: compose-snippet.yml
 
         # Any "volumes" will also pass to docker-compose.
         volumes:

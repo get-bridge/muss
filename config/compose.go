@@ -60,7 +60,7 @@ func (cfg *ProjectConfig) ComposeFilePath() string {
 	return "docker-compose.yml"
 }
 
-// parseServiceDefinitions iterates the ProjectConfig.ServiceDefitions
+// parseServiceDefinitions iterates the ProjectConfig.ServiceDefinitions
 // to build up and store the docker compose map, file gen map, and secrets
 // on the ProjectConfig value.
 // If an error is returned no changes will be made to the value.

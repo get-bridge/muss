@@ -2,24 +2,13 @@
 name: store
 
 configs:
-  internal:
-    volumes:
-      storedata: {}
+  _base:
     services:
       store:
-        image: alpine
-        volumes:
-          - './testdata/entrypoint:/entrypoint'
-          - 'storedata:/data'
-          - type: bind
-            source: './testdata/vol/somedir'
-            target: '/var/somedir'
-            # ensure a bind mount without "file" doesn't error
-          - type: bind
-            source: '${MUSS_TEST_FILE_VOL:-./testdata/vol}/file'
-            target: '/var/somefile'
-            read_only: true
-            file: true
-            consistency: cached
-        entrypoint: [/entrypoint]
-        command: [store]
+        # The store-base.yml file will overwrite this.
+        image: alpine:latest
+  internal:
+    # Mix string and map.
+    include:
+      - _base
+      - file: ./store-base.yml

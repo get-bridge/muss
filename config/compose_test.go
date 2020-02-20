@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -241,6 +242,144 @@ service_definitions:
 		assert.ElementsMatch(t,
 			[]string{"FOO_SECRET", "BAR_SHH", "SECOND_BAR"},
 			actualVarNames)
+	})
+
+	t.Run("include errors", func(t *testing.T) {
+		assertConfigError(t, `
+service_definitions:
+- name: one
+  configs:
+    _base:
+      version: '2.1'
+    sole:
+      include:
+        - _no
+`,
+			"invalid 'include'; config '_no' not found",
+			"bad include string")
+
+		assertConfigError(t, `
+service_definitions:
+- name: one
+  configs:
+    _base:
+      version: '2.1'
+    sole:
+      include:
+        - bad: map
+`,
+			"invalid 'include' map; valid keys: 'file'",
+			"bad include map")
+
+		assertConfigError(t, `
+service_definitions:
+- name: one
+  configs:
+    _base:
+      version: '2.1'
+    sole:
+      include:
+        - [no, good]
+`,
+			"invalid 'include' value; must be a string or a map",
+			"bad include type")
+
+		assertConfigError(t, `
+service_definitions:
+- name: one
+  configs:
+    _base:
+      version: '2.1'
+    sole:
+      include:
+        - file: no-file.txt
+`,
+			"failed to read 'no-file.txt': open no-file.txt: no such file",
+			"bad include type")
+	})
+
+	t.Run("include", func(t *testing.T) {
+		assertComposed(t, `
+service_definitions:
+- name: one
+  configs:
+    _base:
+      version: '2.1'
+    sole:
+      include:
+        - _base
+`,
+			"{version: '2.1'}",
+			"include string")
+
+		assertComposed(t, `
+service_definitions:
+- name: one
+  configs:
+    _base:
+      services:
+        app:
+          image: alpine
+          init: true
+    _edge:
+      services:
+        app:
+          image: alpine:edge
+          tty: true
+    sole:
+      include:
+        - _base
+        - _edge
+`,
+			"{version: '3.7', services: {app: {image: alpine:edge, init: true, tty: true}}}",
+			"multiple include strings merge")
+
+		testutil.WithTempDir(t, func(tmpdir string) {
+			testutil.WriteFile(t, filepath.Join("files", "between.yml"), `
+version: '2.3'
+services:
+  app:
+    image: alpine:latest
+    stdin_open: true
+`)
+
+			assertComposed(t, `
+service_definitions:
+- name: one
+  file: `+filepath.Join("files", "sd.yml")+`
+  configs:
+    sole:
+      include:
+        - file: between.yml
+`,
+				"{version: '2.3', services: {app: {image: alpine:latest, stdin_open: true}}}",
+				"include file")
+
+			assertComposed(t, `
+service_definitions:
+- name: one
+  file: `+filepath.Join("files", "sd.yml")+`
+  configs:
+    _base:
+      services:
+        app:
+          image: alpine
+          init: true
+    _edge:
+      services:
+        app:
+          image: alpine:edge
+          tty: true
+    sole:
+      include:
+        - _base
+        - file: between.yml
+        - _edge
+`,
+				"{version: '2.3', services: {app: {image: alpine:edge, init: true, tty: true, stdin_open: true}}}",
+				"include strings and file mixed")
+		})
+
 	})
 }
 

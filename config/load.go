@@ -74,7 +74,7 @@ func (cfg *ProjectConfig) loadMap(object map[string]interface{}) error {
 func loadServiceDefs(files []string) ([]*ServiceDef, error) {
 	defs := make([]*ServiceDef, len(files))
 	for i, file := range files {
-		service := newServiceDef()
+		service := newServiceDef(file)
 		msi, err := readYamlFile(file)
 		if err != nil {
 			return nil, err
@@ -142,6 +142,20 @@ func readYamlFile(file string) (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	return parseYaml(content)
+}
+
+var yamlFileCache = make(map[string][]byte)
+
+func readCachedYamlFile(file string) (map[string]interface{}, error) {
+	if content, ok := yamlFileCache[file]; ok {
+		return parseYaml(content)
+	}
+	content, err := ioutil.ReadFile(file)
+	if err != nil {
+		return nil, err
+	}
+	yamlFileCache[file] = content
 	return parseYaml(content)
 }
 

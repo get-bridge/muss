@@ -1,3 +1,8 @@
+# v0.7 - Unreleased
+
+- Allow including files into service definition configs
+  with an `include` value of `file: path`.
+
 # v0.6 - 2020-02-04
 
 - Fix load order to ensure MUSS_FILE and MUSS_USER_FILE are respected.

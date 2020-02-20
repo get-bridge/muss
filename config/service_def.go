@@ -1,18 +1,23 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
 // ServiceDef represents a service definition read from a file.
 type ServiceDef struct {
 	Configs map[string]interface{} `yaml:"configs"`
+	File    string                 `yaml:"file"`
 	Name    string                 `yaml:"name"`
 }
 
-func newServiceDef() *ServiceDef {
-	return &ServiceDef{}
+func newServiceDef(file string) *ServiceDef {
+	return &ServiceDef{
+		File: file,
+	}
 }
 
 func (s *ServiceDef) chooseConfig(cfg *ProjectConfig) (map[string]interface{}, error) {
@@ -71,7 +76,28 @@ func (s *ServiceDef) chooseConfig(cfg *ProjectConfig) (map[string]interface{}, e
 		delete(result, "include")
 		base := map[string]interface{}{}
 		for _, i := range includes {
-			base = mapMerge(base, s.Configs[i.(string)].(map[string]interface{}))
+			var input map[string]interface{}
+			if msi, ok := i.(map[string]interface{}); ok {
+				if file, ok := msi["file"].(string); ok && file != "" {
+					file = filepath.Join(filepath.Dir(s.File), file)
+					value, err := readCachedYamlFile(file)
+					if err != nil {
+						return nil, fmt.Errorf("failed to read '%s': %w", file, err)
+					}
+					input = value
+				} else {
+					return nil, errors.New("invalid 'include' map; valid keys: 'file'")
+				}
+			} else if str, ok := i.(string); ok {
+				if value, ok := s.Configs[str].(map[string]interface{}); ok {
+					input = value
+				} else {
+					return nil, fmt.Errorf("invalid 'include'; config '%s' not found", str)
+				}
+			} else {
+				return nil, errors.New("invalid 'include' value; must be a string or a map")
+			}
+			base = mapMerge(base, input)
 		}
 		result = mapMerge(base, result)
 	}

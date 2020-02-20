@@ -85,6 +85,33 @@ func TestConfigLoad(t *testing.T) {
 			assert.Equal(t, userFile2, cfg.UserFile, "env overrides project")
 			assert.Equal(t, "1.3", cfg.User.Override["version"].(string))
 		})
+
+		t.Run("readCachedYamlFile", func(t *testing.T) {
+			file := "cached.yml"
+			testutil.NoFileExists(t, file)
+
+			m, err := readCachedYamlFile(file)
+			assert.NotNil(t, err)
+			assert.Nil(t, m)
+
+			testutil.WriteFile(t, file, "version: '2.7'")
+
+			m, err = readCachedYamlFile(file)
+			assert.Nil(t, err)
+			assert.Equal(t, map[string]interface{}{"version": "2.7"}, m, "read")
+
+			os.Remove(file)
+
+			m, err = readCachedYamlFile(file)
+			assert.Nil(t, err)
+			assert.Equal(t, map[string]interface{}{"version": "2.7"}, m, "cached")
+
+			delete(yamlFileCache, file)
+
+			m, err = readCachedYamlFile(file)
+			assert.NotNil(t, err)
+			assert.Nil(t, m)
+		})
 	})
 }
 
