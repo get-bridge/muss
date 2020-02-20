@@ -3,6 +3,7 @@ package testutil
 import (
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -58,4 +59,16 @@ func TempFile(t *testing.T, dir, pattern string) *os.File {
 		t.Fatalf("error making tempfile '%s/%s': %s", dir, pattern, err)
 	}
 	return tmpfile
+}
+
+// WriteFile writes the file with the provided string
+// and calls t.Fatal if there is an error.
+func WriteFile(t *testing.T, path, content string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+		t.Fatalf("error making parent for %s: %s", path, err)
+	}
+	if err := ioutil.WriteFile(path, []byte(content), 0600); err != nil {
+		t.Fatalf("error reading '%s': %s", path, err)
+	}
 }

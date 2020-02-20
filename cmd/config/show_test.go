@@ -1,7 +1,6 @@
 package config
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -247,7 +246,7 @@ func TestConfigShow(t *testing.T) {
 			})
 
 			t.Run("malformed yaml", func(t *testing.T) {
-				ioutil.WriteFile("muss.yaml", []byte("---\n{"), 0600)
+				testutil.WriteFile(t, "muss.yaml", "---\n{")
 
 				cfg, err := config.NewConfigFromDefaultFile()
 

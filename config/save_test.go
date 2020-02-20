@@ -115,7 +115,7 @@ func TestConfigSave(t *testing.T) {
 			if yaml, err := yamlDump(cfgMap); err != nil {
 				t.Fatal(err)
 			} else {
-				ioutil.WriteFile(defaultProjectFile, yaml, 0644)
+				testutil.WriteFile(t, defaultProjectFile, string(yaml))
 			}
 
 			testutil.NoFileExists(t, "./foo")

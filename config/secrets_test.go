@@ -1,7 +1,6 @@
 package config
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"testing"
@@ -100,7 +99,7 @@ func TestSecretCommands(t *testing.T) {
 
 		os.Setenv(logvarname, "still")
 
-		ioutil.WriteFile(secretCacheFile, []byte("x"), 0600)
+		testutil.WriteFile(t, secretCacheFile, "x")
 		os.Unsetenv(varname)
 		testLoadSecret(t, secret)
 		assert.Equal(t, expSecret, os.Getenv(varname), "sets env var")

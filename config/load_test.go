@@ -1,7 +1,6 @@
 package config
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -13,18 +12,18 @@ import (
 func TestConfigLoad(t *testing.T) {
 	testutil.WithTempDir(t, func(tmpdir string) {
 
-		ioutil.WriteFile(defaultProjectFile, []byte(`project_name: stinky`), 0644)
-		ioutil.WriteFile(defaultUserFile, []byte(`override: {version: "1.1"}`), 0644)
+		testutil.WriteFile(t, defaultProjectFile, `project_name: stinky`)
+		testutil.WriteFile(t, defaultUserFile, `override: {version: "1.1"}`)
 
 		customProjectFile := "mussy.yml"
 		customUserFile := "user.yml"
-		ioutil.WriteFile(customProjectFile, []byte(`project_name: dexter`), 0644)
-		ioutil.WriteFile(customUserFile, []byte(`override: {version: "1.2"}`), 0644)
+		testutil.WriteFile(t, customProjectFile, `project_name: dexter`)
+		testutil.WriteFile(t, customUserFile, `override: {version: "1.2"}`)
 
 		projectFileWithUser := "musswithuser.yaml"
 		userFile2 := "user2.yml"
-		ioutil.WriteFile(projectFileWithUser, []byte(`user_file: user.yml`), 0644)
-		ioutil.WriteFile(userFile2, []byte(`override: {version: "1.3"}`), 0644)
+		testutil.WriteFile(t, projectFileWithUser, `user_file: user.yml`)
+		testutil.WriteFile(t, userFile2, `override: {version: "1.3"}`)
 
 		t.Run("no env", func(t *testing.T) {
 			os.Unsetenv("MUSS_FILE")

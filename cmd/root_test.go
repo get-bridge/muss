@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -98,10 +97,7 @@ service_definitions:
     sole:
       version: "1.5"
 `
-			err := ioutil.WriteFile("muss.yaml", []byte(yaml), 0600)
-			if err != nil {
-				t.Fatal(err)
-			}
+			testutil.WriteFile(t, "muss.yaml", yaml)
 			dest := "docker-compose.yml"
 			testutil.NoFileExists(t, dest)
 
