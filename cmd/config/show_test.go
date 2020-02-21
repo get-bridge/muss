@@ -91,8 +91,8 @@ func TestConfigShow(t *testing.T) {
 			},
 			"service_preference": []string{"repo", "registry"},
 		},
-		"service_definitions": []config.ServiceDef{
-			config.ServiceDef{
+		"service_definitions": []map[string]interface{}{
+			map[string]interface{}{
 				"name": "app",
 				"configs": map[string]interface{}{
 					"sole": exp,

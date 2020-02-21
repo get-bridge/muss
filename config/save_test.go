@@ -72,7 +72,7 @@ func TestConfigSave(t *testing.T) {
 			}
 			cfgMap := map[string]interface{}{
 				"secret_passphrase": "$MUSS_TEST_PASSPHRASE",
-				"service_definitions": []ServiceDef{
+				"service_definitions": []map[string]interface{}{
 					map[string]interface{}{
 						"name": "app",
 						"configs": map[string]interface{}{
@@ -166,7 +166,7 @@ func TestConfigSave(t *testing.T) {
 			exp := map[string]interface{}{
 				"version": "3.4",
 			}
-			cfgMap["service_definitions"] = []ServiceDef{
+			cfgMap["service_definitions"] = []map[string]interface{}{
 				map[string]interface{}{
 					"name": "app",
 					"configs": map[string]interface{}{

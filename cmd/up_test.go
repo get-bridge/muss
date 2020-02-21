@@ -7,7 +7,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"gerrit.instructure.com/muss/config"
 	"gerrit.instructure.com/muss/term"
 )
 
@@ -235,8 +234,8 @@ piyo
 			defer os.Unsetenv("MUSS_TEST_REGISTRY_ERROR")
 
 			cfg := newTestConfig(t, map[string]interface{}{
-				"service_definitions": []config.ServiceDef{
-					config.ServiceDef{
+				"service_definitions": []map[string]interface{}{
+					map[string]interface{}{
 						"name": "app",
 						"configs": map[string]interface{}{
 							"sole": map[string]interface{}{

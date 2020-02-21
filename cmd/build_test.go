@@ -5,8 +5,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"gerrit.instructure.com/muss/config"
 )
 
 func TestBuildCommand(t *testing.T) {
@@ -48,8 +46,8 @@ svc2
 			defer os.Unsetenv("MUSS_TEST_REGISTRY_ERROR")
 
 			cfg := newTestConfig(t, map[string]interface{}{
-				"service_definitions": []config.ServiceDef{
-					config.ServiceDef{
+				"service_definitions": []map[string]interface{}{
+					map[string]interface{}{
 						"name": "app",
 						"configs": map[string]interface{}{
 							"sole": map[string]interface{}{
@@ -77,8 +75,8 @@ svc2
 			defer os.Unsetenv("MUSS_TEST_REGISTRY_ERROR")
 
 			cfg := newTestConfig(t, map[string]interface{}{
-				"service_definitions": []config.ServiceDef{
-					config.ServiceDef{
+				"service_definitions": []map[string]interface{}{
+					map[string]interface{}{
 						"name": "app",
 						"configs": map[string]interface{}{
 							"sole": map[string]interface{}{
