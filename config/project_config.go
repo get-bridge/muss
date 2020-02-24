@@ -6,7 +6,7 @@ import (
 
 // ProjectConfig is a type for the parsed contents of the project config file.
 type ProjectConfig struct {
-	ServiceDefinitions       []ServiceDef           `mapstructure:"service_definitions"`
+	ServiceDefinitions       []*ServiceDef          `mapstructure:"service_definitions"`
 	UserFile                 string                 `mapstructure:"user_file"`
 	User                     *UserConfig            `mapstructure:"user"`
 	ServiceFiles             []string               `mapstructure:"service_files"`

@@ -79,7 +79,7 @@ func (cfg *ProjectConfig) parseServiceDefinitions() (err error) {
 	secrets := make([]envLoader, 0)
 
 	for _, service := range cfg.ServiceDefinitions {
-		servconf, err := serviceConfig(cfg, service)
+		servconf, err := service.chooseConfig(cfg)
 		if err != nil {
 			return err
 		}
@@ -158,71 +158,6 @@ func (cfg *ProjectConfig) parseServiceDefinitions() (err error) {
 	cfg.Secrets = append(cfg.Secrets, secrets...)
 
 	return nil
-}
-
-func serviceConfig(config *ProjectConfig, service ServiceDef) (ServiceConfig, error) {
-	serviceName := service["name"].(string)
-	serviceConfigs := service["configs"].(map[string]interface{})
-	options := mapKeys(serviceConfigs)
-	result := NewServiceConfig()
-
-	// Check if user configured this service specifically.
-	userChoice := ""
-	if config.User != nil {
-		if userserv, ok := config.User.Services[serviceName]; ok {
-			if userserv.Disabled {
-				return result, nil
-			}
-
-			userChoice = userserv.Config
-			if userChoice != "" {
-				if _, ok := serviceConfigs[userChoice]; !ok {
-					return nil, fmt.Errorf("Config '%s' for service '%s' does not exist", userChoice, serviceName)
-				}
-			}
-		}
-	}
-
-	if envChoice := os.Getenv("MUSS_SERVICE_PREFERENCE"); envChoice != "" && serviceConfigs[envChoice] != nil {
-		// If specified via env var, use it.
-		result = serviceConfigs[envChoice].(map[string]interface{})
-	} else if userChoice != "" {
-		// If user chose specifically, use it.
-		result = serviceConfigs[userChoice].(map[string]interface{})
-	} else if len(options) == 1 {
-		// If there is only one option, use it.
-		result = serviceConfigs[options[0]].(map[string]interface{})
-	} else {
-		// To determine which config option to use we can build a list...
-		// starting with any user configured preference...
-		var order []string
-		if config.User != nil {
-			order = config.User.ServicePreference
-		} else {
-			order = []string{}
-		}
-		// followed by any project defaults...
-		order = append(order, config.DefaultServicePreference...)
-
-		// then iterate and use the first preference that this service defines.
-		for _, o := range order {
-			if found, ok := serviceConfigs[o]; ok {
-				result = found.(map[string]interface{})
-				break
-			}
-		}
-	}
-
-	// TODO: recurse
-	if includes, ok := result["include"].([]interface{}); ok {
-		delete(result, "include")
-		base := map[string]interface{}{}
-		for _, i := range includes {
-			base = mapMerge(base, serviceConfigs[i.(string)].(map[string]interface{}))
-		}
-		result = mapMerge(base, result)
-	}
-	return result, nil
 }
 
 func isValidService(service map[string]interface{}) bool {
@@ -362,16 +297,6 @@ func mapMergeOverwrites(k string) bool {
 		}
 	}
 	return false
-}
-
-func mapKeys(m map[string]interface{}) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		if k[0:1] != "_" {
-			keys = append(keys, k)
-		}
-	}
-	return keys
 }
 
 func (cfg *ProjectConfig) composeFileBytes(dcc map[string]interface{}) ([]byte, error) {

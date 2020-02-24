@@ -33,6 +33,8 @@ func parseAndCompose(yaml string) (map[string]interface{}, *ProjectConfig, error
 }
 
 func assertConfigError(t *testing.T, config, expErr string, msgAndArgs ...interface{}) {
+	t.Helper()
+
 	_, _, err := parseAndCompose(config)
 	if err == nil {
 		t.Fatal("expected error, found nil")

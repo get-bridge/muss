@@ -72,10 +72,15 @@ func (cfg *ProjectConfig) loadMap(object map[string]interface{}) error {
 	return nil
 }
 
-func loadServiceDefs(files []string) ([]ServiceDef, error) {
-	defs := make([]ServiceDef, len(files))
+func loadServiceDefs(files []string) ([]*ServiceDef, error) {
+	defs := make([]*ServiceDef, len(files))
 	for i, file := range files {
-		service, err := readYamlFile(file)
+		service := newServiceDef()
+		msi, err := readYamlFile(file)
+		if err != nil {
+			return nil, err
+		}
+		err = mapToStruct(msi, service)
 		if err != nil {
 			return nil, err
 		}
@@ -112,7 +117,8 @@ func structToMap(input interface{}) (map[string]interface{}, error) {
 	if err := mapToStruct(input, &result); err != nil {
 		return nil, err
 	}
-	// TODO hack around mapstructure saving structs
+
+	// Descend into map as mapstructure is only doing the top level.
 	for key, value := range result {
 		switch reflect.TypeOf(value).Kind() {
 		case reflect.Ptr:
@@ -125,6 +131,23 @@ func structToMap(input interface{}) (map[string]interface{}, error) {
 				return nil, err
 			}
 			result[key] = mapValue
+		case reflect.Slice:
+			sliceVal := reflect.ValueOf(value)
+			length := sliceVal.Len()
+			// TODO: more than ptr
+			if length > 0 && sliceVal.Index(0).Kind() == reflect.Ptr {
+				if sliceVal.Index(0).CanInterface() {
+					mapped := make([]interface{}, length)
+					for i := 0; i < length; i++ {
+						mapValue, err := structToMap(sliceVal.Index(i).Interface())
+						if err != nil {
+							return nil, err
+						}
+						mapped[i] = mapValue
+					}
+					result[key] = mapped
+				}
+			}
 		}
 	}
 	return result, nil
