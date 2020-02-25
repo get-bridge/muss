@@ -25,6 +25,11 @@ func TestConfigLoad(t *testing.T) {
 		testutil.WriteFile(t, projectFileWithUser, `user_file: user.yml`)
 		testutil.WriteFile(t, userFile2, `override: {version: "1.3"}`)
 
+		defer func() {
+			os.Unsetenv("MUSS_FILE")
+			os.Unsetenv("MUSS_USER_FILE")
+		}()
+
 		t.Run("no env", func(t *testing.T) {
 			os.Unsetenv("MUSS_FILE")
 			os.Unsetenv("MUSS_USER_FILE")
