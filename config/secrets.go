@@ -80,6 +80,9 @@ func parseSecret(cfg *ProjectConfig, spec map[string]interface{}) (*secretCmd, e
 
 	cmdargs := make([]string, 0)
 
+	// Default to global.
+	passphrase := cfg.SecretPassphrase
+
 	// Static command that just runs its args.
 	if name == "exec" {
 		cmdargs = args
@@ -90,6 +93,10 @@ func parseSecret(cfg *ProjectConfig, spec map[string]interface{}) (*secretCmd, e
 
 				if preArgs, ok := stringSlice(command["exec"]); ok {
 					cmdargs = append(preArgs, args...)
+				}
+
+				if pass, ok := command["passphrase"].(string); ok && pass != "" {
+					passphrase = pass
 				}
 
 				ecs, envErr := parseEnvCommands(command["env_commands"])
@@ -112,7 +119,7 @@ func parseSecret(cfg *ProjectConfig, spec map[string]interface{}) (*secretCmd, e
 			parse:   parse,
 			varname: varname,
 		},
-		passphrase: cfg.SecretPassphrase,
+		passphrase: passphrase,
 	}, nil
 }
 

@@ -63,6 +63,7 @@ secret_commands:
     env_commands:
     - varname: MUSS_TEST_TOKEN
       exec: [echo, MUSS_TEST_TOKEN=1]
+    passphrase: $MUSS_TEST_TOKEN.x
 secret_passphrase: $MUSS_TEST_TOKEN
 service_files:
 - sd.yml
@@ -116,6 +117,7 @@ configs:
 								"exec":    []interface{}{"echo", "MUSS_TEST_TOKEN=1"},
 							},
 						},
+						"passphrase": "$MUSS_TEST_TOKEN.x",
 					},
 				},
 				"secret_passphrase": "$MUSS_TEST_TOKEN",

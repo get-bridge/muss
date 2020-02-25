@@ -409,7 +409,10 @@ To provide a more concrete example:
         env_commands:
           - exec: ["bin/vault-token"]
             parse: true
-    # The passphrase will be parsed and env vars will be interpolated.
+        # The passphrase will be parsed and env vars will be interpolated.
+        passphrase: $VAULT_TOKEN
+    # You can set a global passphrase that will be used for any secrets
+    # that do not define their own.
     secret_passphrase: $VAULT_TOKEN
     service_files:
       - dev/microservice.yml

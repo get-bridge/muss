@@ -162,6 +162,46 @@ func TestSecretCommands(t *testing.T) {
 			// setup only gets called once and the secret gets cached.
 			assert.Equal(t, "multi SETUP\nmulti SECRET\n", testutil.ReadFile(t, secretLog), "neither runs again")
 		})
+
+		t.Run("passphrase", func(t *testing.T) {
+			cfg := &ProjectConfig{
+				SecretPassphrase: "$MUSS_TEST_PASSPHRASE",
+				SecretCommands: map[string]interface{}{
+					"foo": map[string]interface{}{
+						"exec": []string{"echo", "foo"},
+						"env_commands": []interface{}{
+							map[string]interface{}{
+								"exec":  []string{"echo", "foo"},
+								"parse": true,
+							},
+						},
+						"passphrase": "$MUSS_TEST_FOO",
+					},
+					"bar": map[string]interface{}{
+						"exec": []string{"echo", "bar"},
+						"env_commands": []interface{}{
+							map[string]interface{}{
+								"exec":  []string{"echo", "foo"},
+								"parse": true,
+							},
+						},
+					},
+				},
+			}
+
+			foo, err := parseSecret(cfg, map[string]interface{}{"foo": []string{"SECRET"}})
+			if err != nil {
+				t.Fatalf("error preparing secret env file: %s", err)
+			}
+
+			bar, err := parseSecret(cfg, map[string]interface{}{"bar": []string{"SECRET"}})
+			if err != nil {
+				t.Fatalf("error preparing secret env file: %s", err)
+			}
+
+			assert.Equal(t, "$MUSS_TEST_FOO", foo.passphrase, "secret-command-specific")
+			assert.Equal(t, "$MUSS_TEST_PASSPHRASE", bar.passphrase, "global")
+		})
 	})
 
 	t.Run("errors", func(t *testing.T) {
@@ -192,14 +232,14 @@ func TestSecretCommands(t *testing.T) {
 			"a passphrase is required to use secrets",
 			testSecretError(t, cfg, secretSpec))
 
-		cfg.SecretPassphrase = "static"
+		cfg.SecretCommands["some"].(map[string]interface{})["passphrase"] = "static"
 
 		assert.Equal(t,
 			"passphrase should contain a variable so it isn't plain text",
 			testSecretError(t, cfg, secretSpec))
 
 		os.Unsetenv("MUSS_TEST_PASSPHRASE")
-		cfg.SecretPassphrase = "$MUSS_TEST_PASSPHRASE"
+		cfg.SecretCommands["some"].(map[string]interface{})["passphrase"] = "$MUSS_TEST_PASSPHRASE"
 
 		assert.Equal(t,
 			"a passphrase is required to use secrets",
@@ -212,9 +252,8 @@ func TestSecretCommands(t *testing.T) {
 			`secret cannot have multiple commands: ("some" and "exec"|"exec" and "some")`,
 			testSecretError(t, cfg, secretSpec))
 
-		cfg.SecretCommands["some"] = map[string]interface{}{
-			"exec": []string{secretCmdPath, "--no-var"},
-		}
+		cfg.SecretCommands["some"].(map[string]interface{})["exec"] = []string{secretCmdPath, "--no-var"}
+
 		secretSpec = map[string]interface{}{
 			"some": []string{},
 		}

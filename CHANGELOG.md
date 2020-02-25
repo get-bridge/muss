@@ -2,6 +2,8 @@
 
 - Allow including files into service definition configs
   with an `include` value of `file: path`.
+- Allow each item in `secret_commands` to have its own `passphrase`
+  (defaulting to the global `secret_passphrase`).
 
 # v0.6 - 2020-02-04
 
