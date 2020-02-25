@@ -178,9 +178,7 @@ func TestConfigShow(t *testing.T) {
 	t.Run("config show errors", func(t *testing.T) {
 		cfg, err := config.NewConfigFromMap(map[string]interface{}{
 			"user": map[string]interface{}{
-				"override": map[string]interface{}{
-					"yamlbreaker": func() {},
-				},
+				"override": map[string]interface{}{},
 			},
 		})
 		if err != nil {
@@ -197,6 +195,7 @@ func TestConfigShow(t *testing.T) {
 
 		assert.NotContains(t, stderr, `Usage:`, "no usage")
 
+		cfg.User.Override["yamlbreaker"] = func() {}
 		assert.Contains(t,
 			showErr(t, cfg, `{{ yaml .user }}`),
 			`cannot marshal type: func()`,

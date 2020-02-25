@@ -29,6 +29,13 @@ func parseAndCompose(yaml string) (map[string]interface{}, *ProjectConfig, error
 	if err != nil {
 		return nil, nil, err
 	}
+
+	// Just for better test coverage... ensure anything we put in can come out.
+	_, err = cfg.ToMap()
+	if err != nil {
+		return nil, nil, err
+	}
+
 	return dc, cfg, nil
 }
 

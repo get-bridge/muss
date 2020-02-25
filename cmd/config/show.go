@@ -51,7 +51,7 @@ Template examples:
 func processTemplate(format string, cfg *config.ProjectConfig, writer io.Writer) error {
 	cfgMap, err := cfg.ToMap()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	funcMap := template.FuncMap{

@@ -87,3 +87,63 @@ func TestConfigLoad(t *testing.T) {
 		})
 	})
 }
+
+type testSubThing struct {
+	List []interface{} `yaml:"list"`
+}
+type testThing struct {
+	Things []interface{} `yaml:"things"`
+	Str    string        `yaml:"str"`
+}
+
+func TestStructToMap(t *testing.T) {
+	t.Run("structToMap", func(t *testing.T) {
+		thing := &testThing{
+			Things: []interface{}{
+				"strings",
+				map[string]interface{}{
+					"m": map[string]interface{}{},
+					"l": []string{},
+				},
+				32,
+				&testSubThing{
+					List: []interface{}{
+						"a",
+						42,
+						map[string]interface{}{
+							"b": "c",
+						},
+					},
+				},
+			},
+			Str: "stringy",
+		}
+
+		exp := map[string]interface{}{
+			"str": "stringy",
+			"things": []interface{}{
+				"strings",
+				map[string]interface{}{
+					"m": map[string]interface{}{},
+					"l": []interface{}{},
+				},
+				32,
+				map[string]interface{}{
+					"list": []interface{}{
+						"a",
+						42,
+						map[string]interface{}{
+							"b": "c",
+						},
+					},
+				},
+			},
+		}
+
+		msi, err := structToMap(thing)
+		if err != nil {
+			t.Fatalf("structToMap: %s", err)
+		}
+		assert.Equal(t, exp, msi)
+	})
+}

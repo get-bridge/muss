@@ -27,7 +27,7 @@ func TestUserConfig(t *testing.T) {
 
 		exp := map[string]interface{}{
 			"override":           map[string]interface{}{},
-			"service_preference": []string{"bar"},
+			"service_preference": []interface{}{"bar"},
 			"services": map[string]interface{}{
 				"foo": map[string]interface{}{
 					"config":   "", // zero value

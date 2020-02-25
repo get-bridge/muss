@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"reflect"
 
 	"github.com/mitchellh/mapstructure"
 	yaml "gopkg.in/yaml.v2"
@@ -113,45 +112,29 @@ func mapToStruct(input interface{}, pointer interface{}) error {
 	return decoder.Decode(input)
 }
 
-func structToMap(input interface{}) (map[string]interface{}, error) {
-	var result map[string]interface{}
-	if err := mapToStruct(input, &result); err != nil {
+func structToMap(input interface{}) (result map[string]interface{}, err error) {
+	// The reflection in the yaml.Marshal call may panic.
+	defer func() {
+		if r := recover(); r != nil {
+			result = nil
+			err = fmt.Errorf("%s", r)
+		}
+	}()
+
+	// We only do struct -> map for "config show" and testing, so keep it simple.
+	var bs []byte
+	bs, err = yaml.Marshal(input)
+	if err != nil {
 		return nil, err
 	}
 
-	// Descend into map as mapstructure is only doing the top level.
-	for key, value := range result {
-		switch reflect.TypeOf(value).Kind() {
-		case reflect.Ptr:
-			fallthrough
-		case reflect.Struct:
-			fallthrough
-		case reflect.Map:
-			mapValue, err := structToMap(value)
-			if err != nil {
-				return nil, err
-			}
-			result[key] = mapValue
-		case reflect.Slice:
-			sliceVal := reflect.ValueOf(value)
-			length := sliceVal.Len()
-			// TODO: more than ptr
-			if length > 0 && sliceVal.Index(0).Kind() == reflect.Ptr {
-				if sliceVal.Index(0).CanInterface() {
-					mapped := make([]interface{}, length)
-					for i := 0; i < length; i++ {
-						mapValue, err := structToMap(sliceVal.Index(i).Interface())
-						if err != nil {
-							return nil, err
-						}
-						mapped[i] = mapValue
-					}
-					result[key] = mapped
-				}
-			}
-		}
+	var mii map[interface{}]interface{}
+	err = yaml.Unmarshal(bs, &mii)
+	if err != nil {
+		return nil, err
 	}
-	return result, nil
+
+	return stringifyKeys(mii), nil
 }
 
 func readYamlFile(file string) (map[string]interface{}, error) {
