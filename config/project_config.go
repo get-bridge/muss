@@ -6,21 +6,21 @@ import (
 
 // ProjectConfig is a type for the parsed contents of the project config file.
 type ProjectConfig struct {
-	ServiceDefinitions       []*ServiceDef          `mapstructure:"service_definitions"`
-	UserFile                 string                 `mapstructure:"user_file"`
-	User                     *UserConfig            `mapstructure:"user"`
-	ServiceFiles             []string               `mapstructure:"service_files"`
-	SecretCommands           map[string]interface{} `mapstructure:"secret_commands"`
-	SecretPassphrase         string                 `mapstructure:"secret_passphrase"`
-	DefaultServicePreference []string               `mapstructure:"default_service_preference"`
-	Status                   *StatusConfig          `mapstructure:"status"`
-	ProjectName              string                 `mapstructure:"project_name"`
-	ComposeFile              string                 `mapstructure:"compose_file"`
+	ServiceDefinitions       []*ServiceDef          `yaml:"service_definitions"`
+	UserFile                 string                 `yaml:"user_file"`
+	User                     *UserConfig            `yaml:"user"`
+	ServiceFiles             []string               `yaml:"service_files"`
+	SecretCommands           map[string]interface{} `yaml:"secret_commands"`
+	SecretPassphrase         string                 `yaml:"secret_passphrase"`
+	DefaultServicePreference []string               `yaml:"default_service_preference"`
+	Status                   *StatusConfig          `yaml:"status"`
+	ProjectName              string                 `yaml:"project_name"`
+	ComposeFile              string                 `yaml:"compose_file"`
 
-	Secrets     []envLoader
-	ProjectFile string   `mapstructure:"-"`
-	LoadError   error    `mapstructure:"-"`
-	Warnings    []string `mapstructure:"-"`
+	Secrets     []envLoader `yaml:"-"`
+	ProjectFile string      `yaml:"-"`
+	LoadError   error       `yaml:"-"`
+	Warnings    []string    `yaml:"-"`
 
 	composeConfig   map[string]interface{}
 	filesToGenerate FileGenMap

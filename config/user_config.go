@@ -6,15 +6,15 @@ import (
 
 // UserServiceConfig represents the user's configuration for a service
 type UserServiceConfig struct {
-	Config   string `mapstructure:"config"`
-	Disabled bool   `mapstructure:"disabled"`
+	Config   string `yaml:"config"`
+	Disabled bool   `yaml:"disabled"`
 }
 
 // UserConfig represents the user's customization file.
 type UserConfig struct {
-	ServicePreference []string                     `mapstructure:"service_preference"`
-	Services          map[string]UserServiceConfig `mapstructure:"services"`
-	Override          map[string]interface{}       `mapstructure:"override"`
+	ServicePreference []string                     `yaml:"service_preference"`
+	Services          map[string]UserServiceConfig `yaml:"services"`
+	Override          map[string]interface{}       `yaml:"override"`
 }
 
 // NewUserConfig returns new UserConfig

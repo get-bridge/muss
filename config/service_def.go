@@ -7,8 +7,8 @@ import (
 
 // ServiceDef represents a service definition read from a file.
 type ServiceDef struct {
-	Configs map[string]interface{} `mapstructure:"configs"`
-	Name    string                 `mapstructure:"name"`
+	Configs map[string]interface{} `yaml:"configs"`
+	Name    string                 `yaml:"name"`
 }
 
 func newServiceDef() *ServiceDef {

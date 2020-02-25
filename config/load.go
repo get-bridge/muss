@@ -104,6 +104,7 @@ func mapToStruct(input interface{}, pointer interface{}) error {
 		// will have no effect.
 		ErrorUnused: true,
 		Result:      pointer,
+		TagName:     "yaml",
 	}
 	decoder, err := mapstructure.NewDecoder(config)
 	if err != nil {
