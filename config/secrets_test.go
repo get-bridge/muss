@@ -163,6 +163,85 @@ func TestSecretCommands(t *testing.T) {
 			assert.Equal(t, "multi SETUP\nmulti SECRET\n", testutil.ReadFile(t, secretLog), "neither runs again")
 		})
 
+		t.Run("multiple secrets", func(t *testing.T) {
+			logFile := testutil.TempFile(t, "", "muss-secret-log")
+			logFile.Close()
+			os.Setenv("MUSS_TEST_LOG", logFile.Name())
+			defer func() {
+				os.Unsetenv("MUSS_TEST_LOG")
+				os.Remove(logFile.Name())
+				os.Unsetenv("MUSS_TEST_PW")
+				os.Unsetenv("MUSS_TEST_BOX")
+				os.Unsetenv("MUSS_TEST_SAFE")
+				os.Unsetenv("MUSS_TEST_B1")
+				os.Unsetenv("MUSS_TEST_S1")
+			}()
+
+			script := func(name, result string) []string {
+				return []string{
+					"/bin/sh", "-c",
+					`n="$1"; shift; echo "$n 1" >> "$MUSS_TEST_LOG"; sleep 1; echo "$n 2" >> "$MUSS_TEST_LOG"; echo "$*"`,
+					"--",
+					name, result,
+				}
+			}
+
+			os.Setenv("MUSS_TEST_PW", "hi")
+			cfg := newTestConfig(t, map[string]interface{}{
+				"secret_passphrase": "$MUSS_TEST_PW",
+				"secret_commands": map[string]interface{}{
+					"box": map[string]interface{}{
+						"exec": []string{"echo", "box"},
+						"env_commands": []interface{}{
+							map[string]interface{}{
+								"exec":    script("box", "1"),
+								"varname": "MUSS_TEST_BOX",
+							},
+						},
+					},
+					"safe": map[string]interface{}{
+						"exec": []string{"echo", "safe"},
+						"env_commands": []interface{}{
+							map[string]interface{}{
+								"exec":  script("safe", "MUSS_TEST_SAFE=2"),
+								"parse": true,
+							},
+						},
+					},
+				},
+			})
+			secretSpecs := []map[string]interface{}{
+				map[string]interface{}{
+					"box":     []string{"a"},
+					"varname": "MUSS_TEST_B1",
+				},
+				map[string]interface{}{
+					"safe":    []string{"b"},
+					"varname": "MUSS_TEST_S1",
+				},
+			}
+
+			for _, ss := range secretSpecs {
+				parsed, err := parseSecret(cfg, ss)
+				if err != nil {
+					t.Fatal(err)
+				}
+				cfg.Secrets = append(cfg.Secrets, parsed)
+			}
+
+			assert.Nil(t, cfg.LoadEnv(), "no errors")
+			assert.Equal(t, os.Getenv("MUSS_TEST_BOX"), "1")
+			assert.Equal(t, os.Getenv("MUSS_TEST_SAFE"), "2")
+			assert.Equal(t, os.Getenv("MUSS_TEST_B1"), "box a")
+			assert.Equal(t, os.Getenv("MUSS_TEST_S1"), "safe b")
+
+			// Test that each starts and finishes before moving on to the other
+			// but ignore the order in which they run.
+			logged := testutil.ReadFile(t, logFile.Name())
+			assert.Contains(t, logged, "box 1\nbox 2\n")
+			assert.Contains(t, logged, "safe 1\nsafe 2\n")
+		})
+
 		t.Run("passphrase", func(t *testing.T) {
 			cfg := &ProjectConfig{
 				SecretPassphrase: "$MUSS_TEST_PASSPHRASE",

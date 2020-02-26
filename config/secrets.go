@@ -47,7 +47,6 @@ func setCacheRoot(dir string) {
 
 type secretSetup struct {
 	done    bool
-	mutex   sync.Mutex
 	envCmds []envLoader
 }
 
@@ -173,14 +172,16 @@ func (s *secretCmd) Value() ([]byte, error) {
 	return content, nil
 }
 
+var secretSetupMutex sync.Mutex
+
 func runSecretSetup(name string) error {
 	s := secretEnvCommands[name]
 	if s == nil {
 		return nil
 	}
 
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
+	secretSetupMutex.Lock()
+	defer secretSetupMutex.Unlock()
 
 	if !s.done {
 		if err := loadEnvFromCmds(s.envCmds...); err != nil {

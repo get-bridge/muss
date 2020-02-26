@@ -4,6 +4,8 @@
   with an `include` value of `file: path`.
 - Allow each item in `secret_commands` to have its own `passphrase`
   (defaulting to the global `secret_passphrase`).
+- Run secret setup commands sequentially
+  so that user input can be entered one at a time.
 
 # v0.6 - 2020-02-04
 

@@ -194,6 +194,8 @@ secret_passphrase: $MUSS_TEST_PASSPHRASE
 secret_commands:
   print:
     exec: [echo]
+  warn:
+    exec: [echo]
 user:
   service_preference: [repo]
   services:
@@ -205,8 +207,8 @@ user:
 
 		projectConfig := assertComposed(t, config, exp, "service defs with secrets")
 
-		if len(projectConfig.Secrets) != 2 {
-			t.Fatalf("expected 2 secrets, found %d", len(projectConfig.Secrets))
+		if len(projectConfig.Secrets) != 3 {
+			t.Fatalf("expected 3 secrets, found %d", len(projectConfig.Secrets))
 		}
 		assert.Equal(t, "MSKEY", projectConfig.Secrets[0].VarName())
 		assert.Equal(t, "OTHER_SECRET_TEST", projectConfig.Secrets[1].VarName())
