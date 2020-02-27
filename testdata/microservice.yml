@@ -32,8 +32,8 @@ configs:
         print: [some, thing]
       - exec: [echo, what, ever]
         varname: OTHER_SECRET_TEST
-      - warn: [warning]
-        varname: SECRET_WARNING
+      - show: [text]
+        varname: SECRET_SHOW
     services:
       web:
         environment:

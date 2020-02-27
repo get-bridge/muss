@@ -194,7 +194,7 @@ secret_passphrase: $MUSS_TEST_PASSPHRASE
 secret_commands:
   print:
     exec: [echo]
-  warn:
+  show:
     exec: [echo]
 user:
   service_preference: [repo]

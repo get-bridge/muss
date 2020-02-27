@@ -411,6 +411,10 @@ To provide a more concrete example:
             parse: true
         # The passphrase will be parsed and env vars will be interpolated.
         passphrase: $VAULT_TOKEN
+        # The "cache" value can be "passphrase" (the default)
+        # "none" to disable caching, or a duration ("24h", "168h")
+        # to expire the cache (if the passphrase hasn't already changed by then).
+        cache: "passphrase"
     # You can set a global passphrase that will be used for any secrets
     # that do not define their own.
     secret_passphrase: $VAULT_TOKEN

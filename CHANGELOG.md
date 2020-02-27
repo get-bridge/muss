@@ -6,6 +6,8 @@
   (defaulting to the global `secret_passphrase`).
 - Run secret setup commands sequentially
   so that user input can be entered one at a time.
+- Add "cache" parameter to `secret_commands` to allow disabling caching
+  or setting an explicit expiration duration.
 
 # v0.6 - 2020-02-04
 

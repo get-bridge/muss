@@ -6,17 +6,17 @@ user_file: muss.user.yaml
 
 secret_commands:
   print:
-    exec: [echo]
+    exec: [/bin/sh, -c, 'echo loading print "$1" >&2; echo "$*"', '--']
     passphrase: $USER.p
     env_commands:
       - exec: [/bin/sh, -c, 'echo p1 >&2; sleep 1; echo p2 >&2; echo PRINT_READY=1']
         parse: true
-  warn:
-    exec: [echo]
-    passphrase: $USER.w
+  show:
+    exec: [/bin/sh, -c, 'echo loading show "$1" >&2; echo "$*"', '--']
     env_commands:
       - exec: [/bin/sh, -c, 'echo w1 >&2; sleep 1; echo w2 >&2; echo WARN_READY=1']
         parse: true
+    cache: none
 secret_passphrase: $USER.g
 
 default_service_preference:

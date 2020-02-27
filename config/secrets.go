@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"sync"
+	"time"
 
 	"golang.org/x/crypto/nacl/secretbox"
 	"golang.org/x/crypto/pbkdf2"
@@ -20,7 +21,9 @@ var secretDir string
 type secretCmd struct {
 	name string
 	*envCmd
-	passphrase string
+	passphrase    string
+	cache         string
+	cacheDuration time.Duration
 }
 
 func init() {
@@ -81,6 +84,7 @@ func parseSecret(cfg *ProjectConfig, spec map[string]interface{}) (*secretCmd, e
 
 	// Default to global.
 	passphrase := cfg.SecretPassphrase
+	var cache string
 
 	// Static command that just runs its args.
 	if name == "exec" {
@@ -98,6 +102,10 @@ func parseSecret(cfg *ProjectConfig, spec map[string]interface{}) (*secretCmd, e
 					passphrase = pass
 				}
 
+				if cachestr, ok := command["cache"].(string); ok && cachestr != "" {
+					cache = cachestr
+				}
+
 				ecs, envErr := parseEnvCommands(command["env_commands"])
 				if envErr != nil {
 					return nil, envErr
@@ -111,6 +119,18 @@ func parseSecret(cfg *ProjectConfig, spec map[string]interface{}) (*secretCmd, e
 		return nil, fmt.Errorf("failed to prepare secret command '%s'", name)
 	}
 
+	var cacheDuration time.Duration
+	switch cache {
+	case "", "passphrase":
+	case "none":
+	default:
+		var pdErr error
+		cacheDuration, pdErr = time.ParseDuration(cache)
+		if pdErr != nil {
+			return nil, pdErr
+		}
+	}
+
 	return &secretCmd{
 		name: name,
 		envCmd: &envCmd{
@@ -118,7 +138,9 @@ func parseSecret(cfg *ProjectConfig, spec map[string]interface{}) (*secretCmd, e
 			parse:   parse,
 			varname: varname,
 		},
-		passphrase: passphrase,
+		passphrase:    passphrase,
+		cache:         cache,
+		cacheDuration: cacheDuration,
 	}, nil
 }
 
@@ -141,6 +163,10 @@ func (s *secretCmd) Value() ([]byte, error) {
 		return nil, err
 	}
 
+	if s.cache == "none" {
+		return s.envCmd.Value()
+	}
+
 	passphrase, err := s.Passphrase()
 	if err != nil {
 		return nil, err
@@ -150,8 +176,20 @@ func (s *secretCmd) Value() ([]byte, error) {
 
 	// See if we already have the secret cached.
 	cacheFile := path.Join(secretDir, genFileName(s.exec))
-	if fileContent, err := ioutil.ReadFile(cacheFile); err == nil {
-		content = s.decrypt(passphrase, fileContent)
+
+	readCache := true
+	if s.cacheDuration > 0 {
+		expiry := time.Now().Add(-s.cacheDuration)
+		info, err := os.Stat(cacheFile)
+		if err == nil && info.ModTime().Before(expiry) {
+			readCache = false
+		}
+
+	}
+	if readCache {
+		if fileContent, err := ioutil.ReadFile(cacheFile); err == nil {
+			content = s.decrypt(passphrase, fileContent)
+		}
 	}
 
 	// If we don't have a cached value, run the command.

@@ -4,6 +4,7 @@ import (
 	"os"
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -23,7 +24,7 @@ func TestSecretCommands(t *testing.T) {
 
 		os.Unsetenv("MUSS_TEST_PASSPHRASE")
 
-		cfg := ProjectConfig{
+		cfg := &ProjectConfig{
 			SecretPassphrase: "$MUSS_TEST_PASSPHRASE",
 			SecretCommands: map[string]interface{}{
 				"some": map[string]interface{}{
@@ -49,7 +50,7 @@ func TestSecretCommands(t *testing.T) {
 		logvarname := "MUSS_TEST_SECRET_LOG"
 		os.Setenv(logvarname, "shhh")
 
-		secret, err := parseSecret(&cfg, secretSpec)
+		secret, err := parseSecret(cfg, secretSpec)
 		if err != nil {
 			t.Fatalf("error preparing secret env file: %s", err)
 		}
@@ -109,6 +110,51 @@ func TestSecretCommands(t *testing.T) {
 		testLoadSecret(t, secret)
 		assert.Equal(t, expSecret, os.Getenv(varname), "sets env var")
 		assert.Equal(t, "shhh p\nshhh s\nagain s\nagain s\nstill s\n", testutil.ReadFile(t, secretLog), "cached again")
+
+		cfg.SecretCommands["some"].(map[string]interface{})["cache"] = "24h"
+		secret, err = parseSecret(cfg, secretSpec)
+		if err != nil {
+			t.Fatalf("error preparing secret: %s", err)
+		}
+
+		os.Setenv(logvarname, "more")
+
+		os.Unsetenv(varname)
+		testLoadSecret(t, secret)
+		assert.Equal(t, expSecret, os.Getenv(varname), "sets env var")
+		assert.Equal(t, "shhh p\nshhh s\nagain s\nagain s\nstill s\n", testutil.ReadFile(t, secretLog), "cached")
+
+		touch := time.Now().Add(-86401 * time.Second)
+		if err := os.Chtimes(secretCacheFile, touch, touch); err != nil {
+			t.Fatal(err)
+		}
+
+		os.Unsetenv(varname)
+		testLoadSecret(t, secret)
+		assert.Equal(t, expSecret, os.Getenv(varname), "sets env var")
+		assert.Equal(t, "shhh p\nshhh s\nagain s\nagain s\nstill s\nmore s\n", testutil.ReadFile(t, secretLog), "past cache duration")
+
+		os.Unsetenv(varname)
+		testLoadSecret(t, secret)
+		assert.Equal(t, expSecret, os.Getenv(varname), "sets env var")
+		assert.Equal(t, "shhh p\nshhh s\nagain s\nagain s\nstill s\nmore s\n", testutil.ReadFile(t, secretLog), "cached again")
+
+		os.Setenv(logvarname, "none")
+		cfg.SecretCommands["some"].(map[string]interface{})["cache"] = "none"
+		secret, err = parseSecret(cfg, secretSpec)
+		if err != nil {
+			t.Fatalf("error preparing secret: %s", err)
+		}
+
+		os.Unsetenv(varname)
+		testLoadSecret(t, secret)
+		assert.Equal(t, expSecret, os.Getenv(varname), "sets env var")
+		assert.Equal(t, "shhh p\nshhh s\nagain s\nagain s\nstill s\nmore s\nnone s\n", testutil.ReadFile(t, secretLog), "no caching")
+
+		os.Unsetenv(varname)
+		testLoadSecret(t, secret)
+		assert.Equal(t, expSecret, os.Getenv(varname), "sets env var")
+		assert.Equal(t, "shhh p\nshhh s\nagain s\nagain s\nstill s\nmore s\nnone s\nnone s\n", testutil.ReadFile(t, secretLog), "still no caching")
 
 		t.Run("multiple vars in one command", func(t *testing.T) {
 			os.Setenv("MUSS_TEST_PASSPHRASE", "howdy")
@@ -346,10 +392,37 @@ func TestSecretCommands(t *testing.T) {
 			`failed to parse name=value line: NO_EQUAL_SIGN`,
 			testSecretError(t, cfg, secretSpec))
 
-		secretSpec["varname"] = "foo"
+		secretSpec["varname"] = "MUSS_TEST_SECRET"
 
 		assert.Equal(t,
 			`use "parse: true" or "varname", not both`,
+			testSecretError(t, cfg, secretSpec))
+
+		delete(secretSpec, "parse")
+		cfg.SecretCommands["some"].(map[string]interface{})["cache"] = "foo"
+
+		assert.Equal(t,
+			`time: invalid duration foo`,
+			testSecretError(t, cfg, secretSpec))
+
+		cfg.SecretCommands["some"].(map[string]interface{})["cache"] = "none"
+		cfg.SecretCommands["some"].(map[string]interface{})["passphrase"] = ""
+
+		// Test that passphrase can be blank if cache is 'none' (_no_ error).
+		if s, err := parseSecret(cfg, secretSpec); err != nil {
+			t.Fatal(err)
+		} else {
+			if err := loadEnvFromCmds(s); err != nil {
+				t.Fatal(err)
+			}
+		}
+		assert.Equal(t, "NO_EQUAL_SIGN", os.Getenv("MUSS_TEST_SECRET"))
+
+		os.Unsetenv("MUSS_TEST_SECRET")
+
+		cfg.SecretCommands["some"].(map[string]interface{})["cache"] = ""
+		assert.Equal(t,
+			`a passphrase is required to use secrets`,
 			testSecretError(t, cfg, secretSpec))
 	})
 }
