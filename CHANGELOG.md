@@ -1,4 +1,4 @@
-# v0.7 - Unreleased
+# v0.7 - 2020-02-28
 
 - Allow including files into service definition configs
   with an `include` value of `file: path`.
