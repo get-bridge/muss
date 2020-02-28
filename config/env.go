@@ -9,10 +9,11 @@ import (
 	"sync"
 )
 
-type envCmd struct {
-	parse   bool
-	exec    []string
-	varname string
+// EnvCommand is a command that sets (an) env var(s).
+type EnvCommand struct {
+	Exec    []string `yaml:"exec"`
+	Parse   bool     `yaml:"parse"`
+	Varname string   `yaml:"varname"`
 }
 
 type envLoader interface {
@@ -39,71 +40,16 @@ func (cfg *ProjectConfig) LoadEnv() error {
 	return nil
 }
 
-// parseEnvCommands takes an item (interface{}) from a config
-// (map[string]interface{}) and parses it into envCmd object(s) if possible.
-func parseEnvCommands(spec interface{}) ([]envLoader, error) {
-	commands := make([]envLoader, 0)
-	if spec != nil {
-		specs := make([]interface{}, 0)
-		if slice, ok := spec.([]interface{}); ok {
-			specs = append(specs, slice...)
-		} else {
-			specs = append(specs, spec)
-		}
-		for _, cmdSpec := range specs {
-			cmd, err := parseEnvCommand(cmdSpec)
-			if err != nil {
-				return nil, err
-			}
-			commands = append(commands, cmd)
-		}
-	}
-
-	return commands, nil
-}
-
-// parseEnvCommand attempts to parse a single interface{} into an envCmd.
-func parseEnvCommand(spec interface{}) (*envCmd, error) {
-	msi, ok := spec.(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("expected env_command to be a map not %t", spec)
-	}
-
-	parse := false
-	varname := ""
-	args := []string{}
-	for k, v := range msi {
-		switch k {
-		case "varname":
-			varname = v.(string)
-		case "parse":
-			parse = v.(bool)
-		case "exec":
-			var ok bool
-			args, ok = stringSlice(v)
-			if !ok {
-				return nil, fmt.Errorf("exec must be a list")
-			}
-		default:
-			return nil, fmt.Errorf("unknown key for env_command: %s", k)
-		}
-	}
-
-	return &envCmd{
-		exec:    args,
-		parse:   parse,
-		varname: varname,
-	}, nil
-}
-
-func (e *envCmd) ShouldParse() bool {
-	return e.parse
+// ShouldParse is true if the output should be parsed and false if varname
+// should be used.
+func (e *EnvCommand) ShouldParse() bool {
+	return e.Parse
 }
 
 // Value will run the command and return the output.
-func (e *envCmd) Value() ([]byte, error) {
+func (e *EnvCommand) Value() ([]byte, error) {
 	var stdout bytes.Buffer
-	cmd := exec.Command(e.exec[0], e.exec[1:]...)
+	cmd := exec.Command(e.Exec[0], e.Exec[1:]...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = &stdout
 	// Pass stderr to show password prompts (or any problems).
@@ -116,8 +62,9 @@ func (e *envCmd) Value() ([]byte, error) {
 	return bytes.TrimRight(stdout.Bytes(), "\n"), nil
 }
 
-func (e *envCmd) VarName() string {
-	return e.varname
+// VarName returns the name of the env var that the command will set.
+func (e *EnvCommand) VarName() string {
+	return e.Varname
 }
 
 func loadEnv(e envLoader) error {

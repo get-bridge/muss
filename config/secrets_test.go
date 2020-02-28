@@ -26,13 +26,13 @@ func TestSecretCommands(t *testing.T) {
 
 		cfg := &ProjectConfig{
 			SecretPassphrase: "$MUSS_TEST_PASSPHRASE",
-			SecretCommands: map[string]interface{}{
-				"some": map[string]interface{}{
-					"exec": []string{secretCmdPath, "something"},
-					"env_commands": []interface{}{
-						map[string]interface{}{
-							"exec":    []string{secretCmdPath, "pre-cmd"},
-							"varname": "MUSS_TEST_PASSPHRASE",
+			SecretCommands: map[string]*SecretCommand{
+				"some": &SecretCommand{
+					Exec: []string{secretCmdPath, "something"},
+					EnvCommands: []*EnvCommand{
+						&EnvCommand{
+							Exec:    []string{secretCmdPath, "pre-cmd"},
+							Varname: "MUSS_TEST_PASSPHRASE",
 						},
 					},
 				},
@@ -111,7 +111,7 @@ func TestSecretCommands(t *testing.T) {
 		assert.Equal(t, expSecret, os.Getenv(varname), "sets env var")
 		assert.Equal(t, "shhh p\nshhh s\nagain s\nagain s\nstill s\n", testutil.ReadFile(t, secretLog), "cached again")
 
-		cfg.SecretCommands["some"].(map[string]interface{})["cache"] = "24h"
+		cfg.SecretCommands["some"].Cache = "24h"
 		secret, err = parseSecret(cfg, secretSpec)
 		if err != nil {
 			t.Fatalf("error preparing secret: %s", err)
@@ -140,7 +140,7 @@ func TestSecretCommands(t *testing.T) {
 		assert.Equal(t, "shhh p\nshhh s\nagain s\nagain s\nstill s\nmore s\n", testutil.ReadFile(t, secretLog), "cached again")
 
 		os.Setenv(logvarname, "none")
-		cfg.SecretCommands["some"].(map[string]interface{})["cache"] = "none"
+		cfg.SecretCommands["some"].Cache = "none"
 		secret, err = parseSecret(cfg, secretSpec)
 		if err != nil {
 			t.Fatalf("error preparing secret: %s", err)
@@ -166,13 +166,13 @@ func TestSecretCommands(t *testing.T) {
 
 			cfg := &ProjectConfig{
 				SecretPassphrase: "$MUSS_TEST_PASSPHRASE",
-				SecretCommands: map[string]interface{}{
-					"some": map[string]interface{}{
-						"exec": []string{secretCmdPath, "--multi"},
-						"env_commands": []interface{}{
-							map[string]interface{}{
-								"exec":  []string{secretCmdPath, "--multi", "SETUP"},
-								"parse": true,
+				SecretCommands: map[string]*SecretCommand{
+					"some": &SecretCommand{
+						Exec: []string{secretCmdPath, "--multi"},
+						EnvCommands: []*EnvCommand{
+							&EnvCommand{
+								Exec:  []string{secretCmdPath, "--multi", "SETUP"},
+								Parse: true,
 							},
 						},
 					},
@@ -291,23 +291,23 @@ func TestSecretCommands(t *testing.T) {
 		t.Run("passphrase", func(t *testing.T) {
 			cfg := &ProjectConfig{
 				SecretPassphrase: "$MUSS_TEST_PASSPHRASE",
-				SecretCommands: map[string]interface{}{
-					"foo": map[string]interface{}{
-						"exec": []string{"echo", "foo"},
-						"env_commands": []interface{}{
-							map[string]interface{}{
-								"exec":  []string{"echo", "foo"},
-								"parse": true,
+				SecretCommands: map[string]*SecretCommand{
+					"foo": &SecretCommand{
+						Exec: []string{"echo", "foo"},
+						EnvCommands: []*EnvCommand{
+							&EnvCommand{
+								Exec:  []string{"echo", "foo"},
+								Parse: true,
 							},
 						},
-						"passphrase": "$MUSS_TEST_FOO",
+						Passphrase: "$MUSS_TEST_FOO",
 					},
-					"bar": map[string]interface{}{
-						"exec": []string{"echo", "bar"},
-						"env_commands": []interface{}{
-							map[string]interface{}{
-								"exec":  []string{"echo", "foo"},
-								"parse": true,
+					"bar": &SecretCommand{
+						Exec: []string{"echo", "bar"},
+						EnvCommands: []*EnvCommand{
+							&EnvCommand{
+								Exec:  []string{"echo", "foo"},
+								Parse: true,
 							},
 						},
 					},
@@ -336,9 +336,9 @@ func TestSecretCommands(t *testing.T) {
 		os.Unsetenv(varname)
 
 		cfg := &ProjectConfig{
-			SecretCommands: map[string]interface{}{
-				"some": map[string]interface{}{
-					"exec": []string{secretCmdPath, "something"},
+			SecretCommands: map[string]*SecretCommand{
+				"some": &SecretCommand{
+					Exec: []string{secretCmdPath, "something"},
 				},
 			},
 		}
@@ -357,14 +357,14 @@ func TestSecretCommands(t *testing.T) {
 			"a passphrase is required to use secrets",
 			testSecretError(t, cfg, secretSpec))
 
-		cfg.SecretCommands["some"].(map[string]interface{})["passphrase"] = "static"
+		cfg.SecretCommands["some"].Passphrase = "static"
 
 		assert.Equal(t,
 			"passphrase should contain a variable so it isn't plain text",
 			testSecretError(t, cfg, secretSpec))
 
 		os.Unsetenv("MUSS_TEST_PASSPHRASE")
-		cfg.SecretCommands["some"].(map[string]interface{})["passphrase"] = "$MUSS_TEST_PASSPHRASE"
+		cfg.SecretCommands["some"].Passphrase = "$MUSS_TEST_PASSPHRASE"
 
 		assert.Equal(t,
 			"a passphrase is required to use secrets",
@@ -377,7 +377,7 @@ func TestSecretCommands(t *testing.T) {
 			`secret cannot have multiple commands: ("some" and "exec"|"exec" and "some")`,
 			testSecretError(t, cfg, secretSpec))
 
-		cfg.SecretCommands["some"].(map[string]interface{})["exec"] = []string{secretCmdPath, "--no-var"}
+		cfg.SecretCommands["some"].Exec = []string{secretCmdPath, "--no-var"}
 
 		secretSpec = map[string]interface{}{
 			"some": []string{},
@@ -399,14 +399,14 @@ func TestSecretCommands(t *testing.T) {
 			testSecretError(t, cfg, secretSpec))
 
 		delete(secretSpec, "parse")
-		cfg.SecretCommands["some"].(map[string]interface{})["cache"] = "foo"
+		cfg.SecretCommands["some"].Cache = "foo"
 
 		assert.Equal(t,
 			`time: invalid duration foo`,
 			testSecretError(t, cfg, secretSpec))
 
-		cfg.SecretCommands["some"].(map[string]interface{})["cache"] = "none"
-		cfg.SecretCommands["some"].(map[string]interface{})["passphrase"] = ""
+		cfg.SecretCommands["some"].Cache = "none"
+		cfg.SecretCommands["some"].Passphrase = ""
 
 		// Test that passphrase can be blank if cache is 'none' (_no_ error).
 		if s, err := parseSecret(cfg, secretSpec); err != nil {
@@ -420,7 +420,7 @@ func TestSecretCommands(t *testing.T) {
 
 		os.Unsetenv("MUSS_TEST_SECRET")
 
-		cfg.SecretCommands["some"].(map[string]interface{})["cache"] = ""
+		cfg.SecretCommands["some"].Cache = ""
 		assert.Equal(t,
 			`a passphrase is required to use secrets`,
 			testSecretError(t, cfg, secretSpec))

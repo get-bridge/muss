@@ -6,16 +6,16 @@ import (
 
 // ProjectConfig is a type for the parsed contents of the project config file.
 type ProjectConfig struct {
-	ServiceDefinitions       []*ServiceDef          `yaml:"service_definitions"`
-	UserFile                 string                 `yaml:"user_file"`
-	User                     *UserConfig            `yaml:"user"`
-	ServiceFiles             []string               `yaml:"service_files"`
-	SecretCommands           map[string]interface{} `yaml:"secret_commands"`
-	SecretPassphrase         string                 `yaml:"secret_passphrase"`
-	DefaultServicePreference []string               `yaml:"default_service_preference"`
-	Status                   *StatusConfig          `yaml:"status"`
-	ProjectName              string                 `yaml:"project_name"`
-	ComposeFile              string                 `yaml:"compose_file"`
+	ServiceDefinitions       []*ServiceDef             `yaml:"service_definitions"`
+	UserFile                 string                    `yaml:"user_file"`
+	User                     *UserConfig               `yaml:"user"`
+	ServiceFiles             []string                  `yaml:"service_files"`
+	SecretCommands           map[string]*SecretCommand `yaml:"secret_commands"`
+	SecretPassphrase         string                    `yaml:"secret_passphrase"`
+	DefaultServicePreference []string                  `yaml:"default_service_preference"`
+	Status                   *StatusConfig             `yaml:"status"`
+	ProjectName              string                    `yaml:"project_name"`
+	ComposeFile              string                    `yaml:"compose_file"`
 
 	Secrets     []envLoader `yaml:"-"`
 	ProjectFile string      `yaml:"-"`

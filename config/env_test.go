@@ -70,9 +70,9 @@ func TestConfigEnv(t *testing.T) {
 		defer os.Unsetenv("MUSS_TEST_ENV")
 
 		cfg := newTestConfig(t, nil)
-		cfg.Secrets = append(cfg.Secrets, &envCmd{
-			parse: true,
-			exec:  []string{"/bin/sh", "-c", "echo MUSS_TEST_ENV=42"},
+		cfg.Secrets = append(cfg.Secrets, &EnvCommand{
+			Parse: true,
+			Exec:  []string{"/bin/sh", "-c", "echo MUSS_TEST_ENV=42"},
 		})
 
 		assert.Nil(t, cfg.LoadEnv(), "no errors")
@@ -82,9 +82,9 @@ func TestConfigEnv(t *testing.T) {
 	t.Run("returns error", func(t *testing.T) {
 		cfg := newTestConfig(t, nil)
 
-		cfg.Secrets = append(cfg.Secrets, &envCmd{
-			parse: true,
-			exec:  []string{"false"},
+		cfg.Secrets = append(cfg.Secrets, &EnvCommand{
+			Parse: true,
+			Exec:  []string{"false"},
 		})
 
 		loadErr := cfg.LoadEnv()

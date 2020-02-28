@@ -16,11 +16,19 @@ import (
 	"golang.org/x/crypto/pbkdf2"
 )
 
+// SecretCommand holds setup information for secrets that use it.
+type SecretCommand struct {
+	Cache       string        `yaml:"cache"`
+	Exec        []string      `yaml:"exec"`
+	EnvCommands []*EnvCommand `yaml:"env_commands"`
+	Passphrase  string        `yaml:"passphrase"`
+}
+
 var secretDir string
 
 type secretCmd struct {
 	name string
-	*envCmd
+	*EnvCommand
 	passphrase    string
 	cache         string
 	cacheDuration time.Duration
@@ -92,25 +100,21 @@ func parseSecret(cfg *ProjectConfig, spec map[string]interface{}) (*secretCmd, e
 	} else {
 		// See if the project configures an alias to simplify service defs.
 		if cfg.SecretCommands != nil {
-			if command, ok := cfg.SecretCommands[name].(map[string]interface{}); ok {
+			if command, ok := cfg.SecretCommands[name]; ok {
 
-				if preArgs, ok := stringSlice(command["exec"]); ok {
-					cmdargs = append(preArgs, args...)
+				cmdargs = append(command.Exec, args...)
+
+				if command.Passphrase != "" {
+					passphrase = command.Passphrase
 				}
 
-				if pass, ok := command["passphrase"].(string); ok && pass != "" {
-					passphrase = pass
-				}
+				cache = command.Cache
 
-				if cachestr, ok := command["cache"].(string); ok && cachestr != "" {
-					cache = cachestr
+				envCmds := make([]envLoader, len(command.EnvCommands))
+				for i, ec := range command.EnvCommands {
+					envCmds[i] = ec
 				}
-
-				ecs, envErr := parseEnvCommands(command["env_commands"])
-				if envErr != nil {
-					return nil, envErr
-				}
-				secretEnvCommands[name] = &secretSetup{envCmds: ecs}
+				secretEnvCommands[name] = &secretSetup{envCmds: envCmds}
 			}
 		}
 	}
@@ -133,10 +137,10 @@ func parseSecret(cfg *ProjectConfig, spec map[string]interface{}) (*secretCmd, e
 
 	return &secretCmd{
 		name: name,
-		envCmd: &envCmd{
-			exec:    cmdargs,
-			parse:   parse,
-			varname: varname,
+		EnvCommand: &EnvCommand{
+			Exec:    cmdargs,
+			Parse:   parse,
+			Varname: varname,
 		},
 		passphrase:    passphrase,
 		cache:         cache,
@@ -164,7 +168,7 @@ func (s *secretCmd) Value() ([]byte, error) {
 	}
 
 	if s.cache == "none" {
-		return s.envCmd.Value()
+		return s.EnvCommand.Value()
 	}
 
 	passphrase, err := s.Passphrase()
@@ -175,7 +179,7 @@ func (s *secretCmd) Value() ([]byte, error) {
 	var content []byte
 
 	// See if we already have the secret cached.
-	cacheFile := path.Join(secretDir, genFileName(s.exec))
+	cacheFile := path.Join(secretDir, genFileName(s.Exec))
 
 	readCache := true
 	if s.cacheDuration > 0 {
@@ -195,7 +199,7 @@ func (s *secretCmd) Value() ([]byte, error) {
 	// If we don't have a cached value, run the command.
 	if len(content) == 0 {
 		var err error
-		content, err = s.envCmd.Value()
+		content, err = s.EnvCommand.Value()
 		if err != nil {
 			return nil, fmt.Errorf("failed to get secret: %s", err)
 		}

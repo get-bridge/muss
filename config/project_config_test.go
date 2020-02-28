@@ -115,9 +115,11 @@ configs:
 							map[string]interface{}{
 								"varname": "MUSS_TEST_TOKEN",
 								"exec":    []interface{}{"echo", "MUSS_TEST_TOKEN=1"},
+								"parse":   false,
 							},
 						},
 						"passphrase": "$MUSS_TEST_TOKEN.x",
+						"cache":      "",
 					},
 				},
 				"secret_passphrase": "$MUSS_TEST_TOKEN",
