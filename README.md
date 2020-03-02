@@ -287,7 +287,7 @@ and can be:
           app:
             environment:
               # The "app" service (defined more fully elsewhere)
-              # will only recieve this environment variable
+              # will only receive this environment variable
               # if this service definition is enabled.
               MICROSERVICE_ENABLED: '1'
           microservice:
