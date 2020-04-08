@@ -72,26 +72,26 @@ func assertComposed(t *testing.T, config, exp string, msgAndArgs ...interface{})
 }
 
 func TestDockerComposeConfig(t *testing.T) {
-	serviceFiles := `
-service_files:
+	moduleFiles := `
+module_files:
   - ../testdata/app.yml
   - ../testdata/microservice.yml
   - ../testdata/store.yml
 `
 	preferRepo := `
-default_service_preference: [repo, registry]
+default_module_order: [repo, registry]
 `
 
 	preferRegistry := `
-default_service_preference: [registry, repo]
+default_module_order: [registry, repo]
 `
 
 	userRepo := `
-user: {service_preference: [repo, registry]}
+user: {module_order: [repo, registry]}
 `
 
 	userRegistry := `
-user: {service_preference: [registry, repo]}
+user: {module_order: [registry, repo]}
 `
 
 	secretConfig := `
@@ -109,37 +109,60 @@ secret_commands:
 	expRegistryMsRepo := testutil.ReadFile(t, "../testdata/expectations/user-registry-ms-repo.yml")
 
 	t.Run("repo preference", func(t *testing.T) {
-		config := preferRepo + serviceFiles
+		config := preferRepo + moduleFiles
 		assertComposed(t, config, expRepo, "Config with repo preference")
 
 		assertComposed(t, (config + userRegistry), expRegistry, "user preference overrides")
 	})
 
 	t.Run("registry preference", func(t *testing.T) {
-		config := preferRegistry + serviceFiles
+		config := preferRegistry + moduleFiles
 		assertComposed(t, config, expRegistry, "Config with registry preference")
 
 		assertComposed(t, (config + userRepo), expRepo, "user preference overrides")
 	})
 
-	t.Run("user custom service config", func(t *testing.T) {
-		config := preferRepo + serviceFiles + `
+	t.Run("user but no user module_order", func(t *testing.T) {
+		config := preferRegistry + moduleFiles + `
+user: {}
+`
+		assertComposed(t, config, expRegistry, "user without module_order same as default")
+	})
+
+	t.Run("user custom module config", func(t *testing.T) {
+		config := preferRepo + moduleFiles + `
 user_file: ../testdata/user-registry-ms-repo.yml
 `
 
 		assertComposed(t, config, expRegistryMsRepo, "user preference overrides orders")
 	})
 
-	t.Run("env var custom service config", func(t *testing.T) {
-		config := preferRepo + serviceFiles
+	t.Run("env var custom module config", func(t *testing.T) {
+		config := preferRegistry + moduleFiles + secretConfig + `
+user:
+  module_order: [registry]
+`
+		defer os.Unsetenv("MUSS_MODULE_ORDER")
+
+		os.Setenv("MUSS_MODULE_ORDER", "bar,remote,repo,foo")
+		assertComposed(t, config, expRepoMsRemote, "MUSS_MODULE_ORDER env var overrides orders")
+	})
+
+	t.Run("deprecated env var works and warns", func(t *testing.T) {
+		config := preferRegistry + moduleFiles + secretConfig + `
+user:
+  module_order: [repo]
+`
 		defer os.Unsetenv("MUSS_SERVICE_PREFERENCE")
 
-		os.Setenv("MUSS_SERVICE_PREFERENCE", "registry")
-		assertComposed(t, config, expRegistry, "MUSS_SERVICE_PREFERENCE env var overrides orders")
+		os.Setenv("MUSS_SERVICE_PREFERENCE", "remote")
+		cfg := assertComposed(t, config, expRepoMsRemote, "MUSS_MODULE_ORDER env var overrides orders")
+
+		assert.Equal(t, []string{"MUSS_SERVICE_PREFERENCE is deprecated in favor of MUSS_MODULE_ORDER."}, cfg.Warnings, "cfg warnings")
 	})
 
 	t.Run("user override", func(t *testing.T) {
-		config := preferRegistry + serviceFiles + `
+		config := preferRegistry + moduleFiles + `
 user:
   override:
     version: '3.5'
@@ -157,40 +180,40 @@ user:
 		assertComposed(t, config, exp, "user preference overrides orders")
 	})
 
-	t.Run("user can disable services", func(t *testing.T) {
-		config := preferRegistry + serviceFiles + `
+	t.Run("user can disable modules", func(t *testing.T) {
+		config := preferRegistry + moduleFiles + `
 user:
-  services:
+  modules:
     app:
       disabled: true
 `
 
 		exp := testutil.ReadFile(t, "../testdata/expectations/user-registry-app-disabled.yml")
 
-		assertComposed(t, config, exp, "user disabled services")
+		assertComposed(t, config, exp, "user disabled modules")
 	})
 
 	t.Run("config errors", func(t *testing.T) {
 		assertComposed(t,
-			(preferRegistry + serviceFiles + `
+			(preferRegistry + moduleFiles + `
 user:
-  services:
+  modules:
     microservice: {}
 `),
 			expRegistry,
-			"No error on empty service config")
+			"No error on empty module config")
 
 		assertConfigError(t,
 			`
-service_files:
+module_files:
   - ../testdata/microservice.yml
 user:
-  services:
+  modules:
     microservice:
       config: not-found
 `,
-			"Config 'not-found' for service 'microservice' does not exist",
-			"Errors for not-found user service config choice")
+			"Config 'not-found' for module 'microservice' does not exist",
+			"Errors for not-found user module config choice")
 	})
 
 	t.Run("secrets", func(t *testing.T) {
@@ -198,15 +221,15 @@ user:
 		setCacheRoot("/tmp/.muss-test-cache")
 
 		os.Setenv("MUSS_TEST_PASSPHRASE", "decomposing")
-		config := preferRegistry + serviceFiles + secretConfig + `
+		config := preferRegistry + moduleFiles + secretConfig + `
 user:
-  service_preference: [repo]
-  services:
+  module_order: [repo]
+  modules:
     microservice:
       config: remote
 `
 
-		projectConfig := assertComposed(t, config, expRepoMsRemote, "service defs with secrets")
+		projectConfig := assertComposed(t, config, expRepoMsRemote, "module defs with secrets")
 
 		if len(projectConfig.Secrets) != 3 {
 			t.Fatalf("expected 3 secrets, found %d", len(projectConfig.Secrets))
@@ -217,7 +240,7 @@ user:
 		projectConfig = assertComposed(t,
 			`
 secret_passphrase: $MUSS_TEST_PASSPHRASE
-service_definitions:
+module_definitions:
 - name: one
   configs:
     sole:
@@ -249,7 +272,7 @@ service_definitions:
 
 	t.Run("include errors", func(t *testing.T) {
 		assertConfigError(t, `
-service_definitions:
+module_definitions:
 - name: one
   configs:
     _base:
@@ -262,7 +285,7 @@ service_definitions:
 			"bad include string")
 
 		assertConfigError(t, `
-service_definitions:
+module_definitions:
 - name: one
   configs:
     _base:
@@ -275,7 +298,7 @@ service_definitions:
 			"bad include map")
 
 		assertConfigError(t, `
-service_definitions:
+module_definitions:
 - name: one
   configs:
     _base:
@@ -288,7 +311,7 @@ service_definitions:
 			"bad include type")
 
 		assertConfigError(t, `
-service_definitions:
+module_definitions:
 - name: one
   configs:
     _base:
@@ -303,7 +326,7 @@ service_definitions:
 
 	t.Run("include", func(t *testing.T) {
 		assertComposed(t, `
-service_definitions:
+module_definitions:
 - name: one
   configs:
     _base:
@@ -316,7 +339,7 @@ service_definitions:
 			"include string")
 
 		assertComposed(t, `
-service_definitions:
+module_definitions:
 - name: one
   configs:
     _base:
@@ -347,7 +370,7 @@ services:
 `)
 
 			assertComposed(t, `
-service_definitions:
+module_definitions:
 - name: one
   file: `+filepath.Join("files", "sd.yml")+`
   configs:
@@ -359,7 +382,7 @@ service_definitions:
 				"include file")
 
 			assertComposed(t, `
-service_definitions:
+module_definitions:
 - name: one
   file: `+filepath.Join("files", "sd.yml")+`
   configs:

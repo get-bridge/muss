@@ -5,64 +5,70 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
-// ServiceDef represents a service definition read from a file.
-type ServiceDef struct {
+// ModuleDef represents a module definition read from a file.
+type ModuleDef struct {
 	Configs map[string]interface{} `yaml:"configs"`
 	File    string                 `yaml:"file"`
 	Name    string                 `yaml:"name"`
 }
 
-func newServiceDef(file string) *ServiceDef {
-	return &ServiceDef{
+func newModuleDef(file string) *ModuleDef {
+	return &ModuleDef{
 		File: file,
 	}
 }
 
-func (s *ServiceDef) chooseConfig(cfg *ProjectConfig) (map[string]interface{}, error) {
+func (s *ModuleDef) chooseConfig(cfg *ProjectConfig) (map[string]interface{}, error) {
 	options := s.configOptions()
-	result := map[string]interface{}{}
+	var result map[string]interface{}
 
-	// Check if user configured this service specifically.
+	// Check if user configured this module specifically.
 	userChoice := ""
 	if cfg.User != nil {
-		if userserv, ok := cfg.User.Services[s.Name]; ok {
+		if userserv, ok := cfg.User.Modules[s.Name]; ok {
 			if userserv.Disabled {
-				return result, nil
+				return map[string]interface{}{}, nil
 			}
 
 			userChoice = userserv.Config
 			if userChoice != "" {
 				if _, ok := s.Configs[userChoice]; !ok {
-					return nil, fmt.Errorf("Config '%s' for service '%s' does not exist", userChoice, s.Name)
+					return nil, fmt.Errorf("Config '%s' for module '%s' does not exist", userChoice, s.Name)
 				}
 			}
 		}
 	}
 
-	if envChoice := os.Getenv("MUSS_SERVICE_PREFERENCE"); envChoice != "" && s.Configs[envChoice] != nil {
+	order := make([]string, 0)
+	if envChoice := os.Getenv("MUSS_MODULE_ORDER"); envChoice != "" {
 		// If specified via env var, use it.
-		result = s.Configs[envChoice].(map[string]interface{})
+		order = append(order, strings.Split(envChoice, ",")...)
+	} else if envChoice := os.Getenv("MUSS_SERVICE_PREFERENCE"); envChoice != "" {
+		cfg.Warn("MUSS_SERVICE_PREFERENCE is deprecated in favor of MUSS_MODULE_ORDER.")
+		order = append(order, envChoice)
 	} else if userChoice != "" {
 		// If user chose specifically, use it.
 		result = s.Configs[userChoice].(map[string]interface{})
-	} else if len(options) == 1 {
-		// If there is only one option, use it.
+	}
+
+	// If there is only one option, use it.
+	if len(options) == 1 {
 		result = s.Configs[options[0]].(map[string]interface{})
-	} else {
+	}
+
+	if result == nil {
 		// To determine which config option to use we can build a list...
 		// starting with any user configured preference...
-		var order []string
 		if cfg.User != nil {
-			order = cfg.User.ServicePreference
-		} else {
-			order = []string{}
+			order = append(order, cfg.User.ModuleOrder...)
 		}
 		// followed by any project defaults...
-		order = append(order, cfg.DefaultServicePreference...)
+		order = append(order, cfg.DefaultModuleOrder...)
 
-		// then iterate and use the first preference that this service defines.
+		// then iterate and use the first preference that this module defines.
 		for _, o := range order {
 			if found, ok := s.Configs[o]; ok {
 				result = found.(map[string]interface{})
@@ -104,7 +110,7 @@ func (s *ServiceDef) chooseConfig(cfg *ProjectConfig) (map[string]interface{}, e
 	return result, nil
 }
 
-func (s *ServiceDef) configOptions() []string {
+func (s *ModuleDef) configOptions() []string {
 	keys := make([]string, 0, len(s.Configs))
 	for k := range s.Configs {
 		if k[0:1] != "_" {

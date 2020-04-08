@@ -19,14 +19,14 @@ type FileGenMap map[string]FileGenFunc
 
 func (cfg *ProjectConfig) loadComposeConfig() error {
 	if cfg.composeConfig == nil {
-		if len(cfg.ServiceDefinitions) == 0 {
+		if len(cfg.ModuleDefinitions) == 0 {
 			dcc, err := cfg.loadStaticComposeConfig()
 			if err != nil {
 				return err
 			}
 			cfg.composeConfig = dcc
 		} else {
-			err := cfg.parseServiceDefinitions()
+			err := cfg.parseModuleDefinitions()
 			if err != nil {
 				return err
 			}
@@ -60,11 +60,11 @@ func (cfg *ProjectConfig) ComposeFilePath() string {
 	return "docker-compose.yml"
 }
 
-// parseServiceDefinitions iterates the ProjectConfig.ServiceDefinitions
+// parseModuleDefinitions iterates the ProjectConfig.ModuleDefinitions
 // to build up and store the docker compose map, file gen map, and secrets
 // on the ProjectConfig value.
 // If an error is returned no changes will be made to the value.
-func (cfg *ProjectConfig) parseServiceDefinitions() (err error) {
+func (cfg *ProjectConfig) parseModuleDefinitions() (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = r.(error)
@@ -78,8 +78,8 @@ func (cfg *ProjectConfig) parseServiceDefinitions() (err error) {
 	files := make(FileGenMap)
 	secrets := make([]envLoader, 0)
 
-	for _, service := range cfg.ServiceDefinitions {
-		servconf, err := service.chooseConfig(cfg)
+	for _, module := range cfg.ModuleDefinitions {
+		servconf, err := module.chooseConfig(cfg)
 		if err != nil {
 			return err
 		}
@@ -308,13 +308,13 @@ func (cfg *ProjectConfig) composeFileBytes(dcc map[string]interface{}) ([]byte, 
 	content := []byte(`#
 # THIS FILE IS GENERATED!
 #
-# To add new service definition files edit ` + cfg.ProjectFile + `.
+# To add new module definition files edit ` + cfg.ProjectFile + `.
 #
 `)
 
 	if cfg.UserFile != "" {
 		content = append(content,
-			[]byte(fmt.Sprintf("# To configure the services you want to use edit %v.\n#\n", cfg.UserFile))...)
+			[]byte(fmt.Sprintf("# To configure the modules you want to use edit %v.\n#\n", cfg.UserFile))...)
 	}
 
 	content = append(content, []byte("\n---\n")...)

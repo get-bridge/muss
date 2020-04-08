@@ -84,14 +84,14 @@ func TestConfigShow(t *testing.T) {
 	cfgMap := map[string]interface{}{
 		"project_name": "the_hunt",
 		"user": map[string]interface{}{
-			"services": map[string]interface{}{
+			"modules": map[string]interface{}{
 				"foo": map[string]interface{}{
 					"config": "bar",
 				},
 			},
-			"service_preference": []string{"repo", "registry"},
+			"module_order": []string{"repo", "registry"},
 		},
-		"service_definitions": []map[string]interface{}{
+		"module_definitions": []map[string]interface{}{
 			map[string]interface{}{
 				"name": "app",
 				"configs": map[string]interface{}{
@@ -129,26 +129,26 @@ func TestConfigShow(t *testing.T) {
 
 		assert.Equal(t,
 			"./here:/there\ndata:/var/data\n",
-			showOut(t, cfg, `{{ range .service_definitions }}{{ range .configs }}{{ range .services }}{{ range .volumes }}{{ . }}{{ "\n" }}{{ end }}{{ end }}{{ end }}{{ end }}`),
-			"iterate over project config service_definitions")
+			showOut(t, cfg, `{{ range .module_definitions }}{{ range .configs }}{{ range .services }}{{ range .volumes }}{{ . }}{{ "\n" }}{{ end }}{{ end }}{{ end }}{{ end }}`),
+			"iterate over project config module_definitions")
 
 		assert.Equal(t,
 			"- ./here:/there\n- data:/var/data\n",
-			showOut(t, cfg, `{{ range .service_definitions }}{{ range .configs }}{{ range .services }}{{ yaml .volumes }}{{ end }}{{ end }}{{ end }}`),
+			showOut(t, cfg, `{{ range .module_definitions }}{{ range .configs }}{{ range .services }}{{ yaml .volumes }}{{ end }}{{ end }}{{ end }}`),
 			"yaml template function")
 
 		assert.Equal(t,
 			"repo\nregistry\n",
-			showOut(t, cfg, `{{ range user.service_preference }}{{ . }}{{ "\n" }}{{ end }}`),
+			showOut(t, cfg, `{{ range user.module_order }}{{ . }}{{ "\n" }}{{ end }}`),
 			"user func")
 
 		assert.Equal(t,
 			"bar",
-			showOut(t, cfg, `{{ range .user.services }}{{ .config }}{{ end }}`),
+			showOut(t, cfg, `{{ range .user.modules }}{{ .config }}{{ end }}`),
 			".user (key)")
 	})
 
-	t.Run("without service defs", func(t *testing.T) {
+	t.Run("without module defs", func(t *testing.T) {
 		if dir, err := os.Getwd(); err != nil {
 			t.Fatal(err)
 		} else {
@@ -163,7 +163,7 @@ func TestConfigShow(t *testing.T) {
 		assert.Equal(t,
 			"a1.alpine\na2.alpine\n",
 			stdout,
-			"compose config without service defs")
+			"compose config without module defs")
 	})
 
 	t.Run("empty config", func(t *testing.T) {
@@ -171,7 +171,7 @@ func TestConfigShow(t *testing.T) {
 
 		assert.Equal(t,
 			"",
-			showOut(t, cfg, `{{ range user.services }}{{ .config }}{{ end }}`),
+			showOut(t, cfg, `{{ range user.modules }}{{ .config }}{{ end }}`),
 			"empty user")
 	})
 

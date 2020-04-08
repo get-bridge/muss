@@ -10,8 +10,8 @@ func TestUserConfig(t *testing.T) {
 	t.Run("user.ToMap", func(t *testing.T) {
 		user, err := UserConfigFromMap(map[string]interface{}{
 			"override":           map[string]interface{}{},
-			"service_preference": []string{"bar"},
-			"services": map[string]interface{}{
+			"module_order": []string{"bar"},
+			"modules": map[string]interface{}{
 				"foo": map[string]interface{}{
 					"disabled": true,
 				},
@@ -27,8 +27,8 @@ func TestUserConfig(t *testing.T) {
 
 		exp := map[string]interface{}{
 			"override":           map[string]interface{}{},
-			"service_preference": []interface{}{"bar"},
-			"services": map[string]interface{}{
+			"module_order": []interface{}{"bar"},
+			"modules": map[string]interface{}{
 				"foo": map[string]interface{}{
 					"config":   "", // zero value
 					"disabled": true,

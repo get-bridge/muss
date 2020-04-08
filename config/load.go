@@ -39,11 +39,28 @@ func (cfg *ProjectConfig) loadMap(object map[string]interface{}) error {
 		return err
 	}
 
-	loaded, err := loadServiceDefs(cfg.ServiceFiles)
+	// Transform deprecated fields.
+	if len(cfg.DeprecatedServiceDefinitions) > 0 {
+		cfg.Warn("Configuration 'service_definitions' is deprecated in favor of 'module_definitions'.")
+		cfg.ModuleDefinitions = append(cfg.DeprecatedServiceDefinitions, cfg.ModuleDefinitions...)
+		cfg.DeprecatedServiceDefinitions = nil
+	}
+	if len(cfg.DeprecatedServiceFiles) > 0 {
+		cfg.Warn("Configuration 'service_files' is deprecated in favor of 'module_files'.")
+		cfg.ModuleFiles = append(cfg.DeprecatedServiceFiles, cfg.ModuleFiles...)
+		cfg.DeprecatedServiceFiles = nil
+	}
+	if len(cfg.DeprecatedDefaultServicePreference) > 0 {
+		cfg.Warn("Configuration 'default_service_preference' is deprecated in favor of 'default_module_order'.")
+		cfg.DefaultModuleOrder = append(cfg.DeprecatedDefaultServicePreference, cfg.DefaultModuleOrder...)
+		cfg.DeprecatedDefaultServicePreference = nil
+	}
+
+	loaded, err := loadModuleDefs(cfg.ModuleFiles)
 	if err != nil {
 		return err
 	}
-	cfg.ServiceDefinitions = append(cfg.ServiceDefinitions, loaded...)
+	cfg.ModuleDefinitions = append(cfg.ModuleDefinitions, loaded...)
 
 	// Prefer env user file if present.
 	if envUserFile := os.Getenv("MUSS_USER_FILE"); envUserFile != "" {
@@ -68,23 +85,47 @@ func (cfg *ProjectConfig) loadMap(object map[string]interface{}) error {
 		}
 	}
 
+	if cfg.User != nil {
+		// Transform deprecated user fields.
+		if cfg.User.DeprecatedServices != nil {
+			cfg.Warn("User configuration 'services' is deprecated in favor of 'modules'.")
+			if cfg.User.Modules == nil {
+				cfg.User.Modules = make(map[string]UserModuleConfig)
+			}
+			for k, v := range cfg.User.DeprecatedServices {
+				if _, ok := cfg.User.Modules[k]; ok {
+					cfg.Warn(fmt.Sprintf("User configuration 'services.%s' ignored since 'modules.%s' is present.", k, k))
+				} else {
+					cfg.User.Modules[k] = v
+				}
+			}
+			cfg.User.DeprecatedServices = nil
+		}
+		if len(cfg.User.DeprecatedServicePreference) > 0 {
+			cfg.Warn("User configuration 'service_preference' is deprecated in favor of 'module_order'.")
+			cfg.User.ModuleOrder = append(cfg.User.DeprecatedServicePreference, cfg.User.ModuleOrder...)
+			cfg.User.DeprecatedServicePreference = nil
+		}
+
+	}
+
 	return nil
 }
 
-func loadServiceDefs(files []string) ([]*ServiceDef, error) {
-	defs := make([]*ServiceDef, len(files))
+func loadModuleDefs(files []string) ([]*ModuleDef, error) {
+	defs := make([]*ModuleDef, len(files))
 	for i, file := range files {
-		service := newServiceDef(file)
+		module := newModuleDef(file)
 		msi, err := readYamlFile(file)
 		if err != nil {
 			return nil, err
 		}
-		err = mapToStruct(msi, service)
+		err = mapToStruct(msi, module)
 		if err != nil {
 			return nil, err
 		}
 		// TODO: validate
-		defs[i] = service
+		defs[i] = module
 	}
 	return defs, nil
 }

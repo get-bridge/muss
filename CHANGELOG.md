@@ -1,3 +1,8 @@
+# v0.8 - Unreleased
+
+- Rename "service" muss concept to "module" to improve clarity.
+  Show deprecation warnings when old names are used.
+
 # v0.7 - 2020-02-28
 
 - Allow including files into service definition configs

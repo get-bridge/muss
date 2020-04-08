@@ -91,7 +91,7 @@ func TestRootCommand(t *testing.T) {
 	t.Run("Execute()", func(t *testing.T) {
 		testutil.WithTempDir(t, func(tmpdir string) {
 			yaml := `---
-service_definitions:
+module_definitions:
 - name: foo
   configs:
     sole:

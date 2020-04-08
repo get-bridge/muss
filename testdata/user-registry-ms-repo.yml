@@ -1,6 +1,6 @@
 ---
-service_preference:
+module_order:
   - registry
-services:
+modules:
   microservice:
     config: repo

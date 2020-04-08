@@ -72,7 +72,7 @@ func TestConfigSave(t *testing.T) {
 			}
 			cfgMap := map[string]interface{}{
 				"secret_passphrase": "$MUSS_TEST_PASSPHRASE",
-				"service_definitions": []map[string]interface{}{
+				"module_definitions": []map[string]interface{}{
 					map[string]interface{}{
 						"name": "app",
 						"configs": map[string]interface{}{
@@ -135,13 +135,13 @@ func TestConfigSave(t *testing.T) {
 
 				assert.Contains(t,
 					string(written),
-					"# To add new service definition files edit muss.yaml.",
+					"# To add new module definition files edit muss.yaml.",
 					"contains generated comments",
 				)
 
 				assert.Contains(t,
 					string(written),
-					"# To configure the services you want to use edit muss.user.yaml.",
+					"# To configure the modules you want to use edit muss.user.yaml.",
 					"contains user file comments",
 				)
 
@@ -166,7 +166,7 @@ func TestConfigSave(t *testing.T) {
 			exp := map[string]interface{}{
 				"version": "3.4",
 			}
-			cfgMap["service_definitions"] = []map[string]interface{}{
+			cfgMap["module_definitions"] = []map[string]interface{}{
 				map[string]interface{}{
 					"name": "app",
 					"configs": map[string]interface{}{
@@ -187,7 +187,7 @@ func TestConfigSave(t *testing.T) {
 
 				assert.Contains(t,
 					string(written),
-					"# To add new service definition files edit test.file.",
+					"# To add new module definition files edit test.file.",
 					"contains generated comments",
 				)
 

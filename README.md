@@ -112,26 +112,30 @@ A muss project is configured via a series of yaml files:
 
 1. project config
 2. user config
-3. service definitions
+3. module definitions
 
 The project configuration defines:
 
-- default preferences for service configs
+- default preferences for module configs
 - secret commands
+- status command
 - the locations of additional config files
+- docker-compose settings
 
 This file should be committed into source control.
 
 
 A muss user file allows you to specify preferences and customizations:
 
-- specify a different service preference order than the project's default
-- disable services that you don't intend to use
+- specify a different module order than the project's default
+- select specific module configs
+- disable modules that you don't intend to use
+- a compose override map to be merged in at the end
 
 This file should be ignored by version control.
 
 
-The project file can include the location of service definition files,
+The project file can include the location of module definition files,
 each of which:
 
 - has a name
@@ -159,19 +163,19 @@ The syntax and options for the main `muss.yaml` file:
     # The override section of the muss user file will still work, however.
     compose_file: "docker-compose.muss.yml"
 
-    # Define the order for which configuration option to use
-    # for any service that has multiple options.
-    default_service_preference:
+    # Define the order of which configuration option to use
+    # for any module that has multiple options.
+    default_module_order:
       - registry
       - repo
       - internal
 
-    # Service files are yaml files containing service definitions.
-    service_files:
+    # Module files are yaml files containing module definitions.
+    module_files:
       - ./dev/database.yml
       - ./dev/microservice/service.yml
 
-    # Secret commands define aliases that can be used by service definitions.
+    # Secret commands define aliases that can be used by module definitions.
     secret_commands:
       vault:
 
@@ -208,15 +212,15 @@ Users can customize what they want to run with a user file:
 
 ```yaml
     ---
-    # Users can set their own default order for which service config to prefer.
-    # This list will be used before the default_service_preference of the
+    # Users can set their own order for which module config to use.
+    # This list will be used before the default_module_order of the
     # project config.
-    service_preference:
+    module_order:
       - remote
       - repo
 
-    # Services can also be chosen specifically (to override preference lists)
-    services:
+    # Modules can also be chosen specifically (to override order lists)
+    modules:
       microservice:
         config: remote
 
@@ -235,17 +239,17 @@ Users can customize what they want to run with a user file:
 ```
 
 
-## Service Definitions
+## Module Definitions
 
-Service files contain service definitions that will generate chunks of a
+Module files contain module definitions that will generate chunks of a
 docker-compose file (which will all be merged on top of each other).
 
-A service can define multiple configs.
+A module can define multiple configs.
 The names of the configs are arbitrary;
 These are the values used in the
-`service_preference` and `default_service_preference` lists.
-Use common names among your services so that the
-preference options apply as consistently as possible.
+`module_order` and `default_module_order` lists.
+Use common names among your modules so that the
+order options apply as consistently as possible.
 
 In the example below:
 - "local" implies "run from local directory"
@@ -254,11 +258,12 @@ In the example below:
 
 When multiple configs are defined
 the option will be chosen in this order:
+- `MUSS_MODULE_ORDER` env var (split on commas)
 - a specific user choice
-- the first of any `service_preference`
-- the first of any `default_service_preference`
+- the first of any `module_order`
+- the first of any `default_module_order`
 
-The body of a service config can contain the following:
+The body of a module config can contain the following:
 - "include" is a list of items to merge in before the rest of the map
 and can be:
   - a string referring to another config name
@@ -271,7 +276,7 @@ and can be:
 
 ```yaml
     ---
-    # Service name.
+    # Module name.
     name: microservice
 
     configs:
@@ -355,7 +360,7 @@ used in the end.
 
 Service integration can now be organized around how services will be selected.
 All of the docker-compose configuration for a given service can be placed in the
-same service file, including not only that service (or multiple services)
+same module file, including not only that service (or multiple services)
 but also how it integrates with another service.
 
 For example, if a microservice can be local, remote, or completely optional,
@@ -374,13 +379,13 @@ configured to send any stats.
 
 # Secrets
 
-Service definitions can specify secrets to be loaded by external commands.
+Module definitions can specify secrets to be loaded by external commands.
 
 The project configuration defines aliases that simplify the usage
 and define commands that setup the environment
 (for example, logging in to vault and returning the token).
 
-When a service config is chosen that includes secrets:
+When a module config is chosen that includes secrets:
 
 - the setup commands are executed and the environment is populated
 - the individual secret commands are then run and added as environment variables
@@ -418,7 +423,7 @@ To provide a more concrete example:
     # You can set a global passphrase that will be used for any secrets
     # that do not define their own.
     secret_passphrase: $VAULT_TOKEN
-    service_files:
+    module_files:
       - dev/microservice.yml
 
 The exec command can be something global
@@ -441,7 +446,7 @@ The `bin/vault-token` script would probably do something like this:
     echo VAULT_ADDR="$VAULT_ADDR"
     echo VAULT_TOKEN="$(< ~/.vault-token )"
 
-The actual secrets in the service definition (`dev/microservice.yml`):
+The actual secrets in the module definition (`dev/microservice.yml`):
 
     name: microservice
     configs:
@@ -453,7 +458,7 @@ The actual secrets in the service definition (`dev/microservice.yml`):
             environment:
               SECRET_KEY: # no value, it will get it from the environment.
 
-So when the "somewhere-far" option is chosen for the service
+So when the "somewhere-far" option is chosen for the module
 it will load those secrets.
 
 First `bin/vault-token` will be executed and `VAULT_ADDR` and `VAULT_TOKEN`

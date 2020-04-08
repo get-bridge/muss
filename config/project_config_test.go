@@ -31,16 +31,16 @@ func TestProjectToMap(t *testing.T) {
 		assert.Nil(t, err)
 
 		exp := map[string]interface{}{
-			"project_name":               "",
-			"compose_file":               "",
-			"default_service_preference": []interface{}{},
-			"secret_commands":            map[string]interface{}{},
-			"secret_passphrase":          "",
-			"service_definitions":        []interface{}{},
-			"service_files":              []interface{}{},
-			"status":                     nil,
-			"user":                       nil,
-			"user_file":                  "muss.user.yaml",
+			"project_name":         "",
+			"compose_file":         "",
+			"default_module_order": []interface{}{},
+			"secret_commands":      map[string]interface{}{},
+			"secret_passphrase":    "",
+			"module_definitions":   []interface{}{},
+			"module_files":         []interface{}{},
+			"status":               nil,
+			"user":                 nil,
+			"user_file":            "muss.user.yaml",
 		}
 
 		assert.Equal(t, exp, m)
@@ -54,7 +54,7 @@ func TestProjectToMap(t *testing.T) {
 project_name: tester
 compose_file: foo.yml
 user_file: user.yml
-default_service_preference:
+default_module_order:
 - foo
 - bar
 secret_commands:
@@ -65,7 +65,7 @@ secret_commands:
       exec: [echo, MUSS_TEST_TOKEN=1]
     passphrase: $MUSS_TEST_TOKEN.x
 secret_passphrase: $MUSS_TEST_TOKEN
-service_files:
+module_files:
 - sd.yml
 status:
   exec: [date]
@@ -73,7 +73,7 @@ status:
   interval: 10s
 `)
 			testutil.WriteFile(t, "user.yml", `
-service_preference:
+module_order:
   - baz
 override:
   version: '3.2'
@@ -81,7 +81,7 @@ override:
     s1:
       environment:
         HOGE: piyo
-services:
+modules:
   sd:
     config: bar
   s2:
@@ -104,10 +104,10 @@ configs:
     volumes: {}
 `)
 			exp := map[string]interface{}{
-				"project_name":               "tester",
-				"compose_file":               "foo.yml",
-				"user_file":                  "user.yml",
-				"default_service_preference": []interface{}{"foo", "bar"},
+				"project_name":         "tester",
+				"compose_file":         "foo.yml",
+				"user_file":            "user.yml",
+				"default_module_order": []interface{}{"foo", "bar"},
 				"secret_commands": map[string]interface{}{
 					"shh": map[string]interface{}{
 						"exec": []interface{}{"echo", "secret"},
@@ -123,7 +123,7 @@ configs:
 					},
 				},
 				"secret_passphrase": "$MUSS_TEST_TOKEN",
-				"service_definitions": []interface{}{
+				"module_definitions": []interface{}{
 					map[string]interface{}{
 						"name": "sd",
 						"file": "sd.yml",
@@ -153,14 +153,14 @@ configs:
 						},
 					},
 				},
-				"service_files": []interface{}{"sd.yml"},
+				"module_files": []interface{}{"sd.yml"},
 				"status": map[string]interface{}{
 					"exec":        []interface{}{"date"},
 					"line_format": "# %s",
 					"interval":    "10s",
 				},
 				"user": map[string]interface{}{
-					"service_preference": []interface{}{"baz"},
+					"module_order": []interface{}{"baz"},
 					"override": map[string]interface{}{
 						"version": "3.2",
 						"services": map[string]interface{}{
@@ -171,7 +171,7 @@ configs:
 							},
 						},
 					},
-					"services": map[string]interface{}{
+					"modules": map[string]interface{}{
 						"sd": map[string]interface{}{
 							"config":   "bar",
 							"disabled": false,

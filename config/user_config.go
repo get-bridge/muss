@@ -4,17 +4,20 @@ import (
 	"fmt"
 )
 
-// UserServiceConfig represents the user's configuration for a service
-type UserServiceConfig struct {
+// UserModuleConfig represents the user's configuration for a module.
+type UserModuleConfig struct {
 	Config   string `yaml:"config"`
 	Disabled bool   `yaml:"disabled"`
 }
 
 // UserConfig represents the user's customization file.
 type UserConfig struct {
-	ServicePreference []string                     `yaml:"service_preference"`
-	Services          map[string]UserServiceConfig `yaml:"services"`
-	Override          map[string]interface{}       `yaml:"override"`
+	ModuleOrder []string                    `yaml:"module_order"`
+	Modules     map[string]UserModuleConfig `yaml:"modules"`
+	Override    map[string]interface{}      `yaml:"override"`
+
+	DeprecatedServicePreference []string                    `yaml:"service_preference,omitempty"`
+	DeprecatedServices          map[string]UserModuleConfig `yaml:"services,omitempty"`
 }
 
 // NewUserConfig returns new UserConfig

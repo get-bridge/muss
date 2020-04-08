@@ -234,7 +234,7 @@ piyo
 			defer os.Unsetenv("MUSS_TEST_REGISTRY_ERROR")
 
 			cfg := newTestConfig(t, map[string]interface{}{
-				"service_definitions": []map[string]interface{}{
+				"module_definitions": []map[string]interface{}{
 					map[string]interface{}{
 						"name": "app",
 						"configs": map[string]interface{}{

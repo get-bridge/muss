@@ -99,7 +99,7 @@ func parseSecret(cfg *ProjectConfig, spec map[string]interface{}) (*secretCmd, e
 	if name == "exec" {
 		cmdargs = args
 	} else {
-		// See if the project configures an alias to simplify service defs.
+		// See if the project configures an alias to simplify module defs.
 		if cfg.SecretCommands != nil {
 			if command, ok := cfg.SecretCommands[name]; ok {
 

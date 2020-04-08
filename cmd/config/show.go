@@ -34,8 +34,8 @@ Template examples:
   # Show the names of each configured service:
   '{{ range $k, $v := compose.services }}{{ $k }}{{ "\n" }}{{ end }}'
 
-  # Show all the options for service configs:
-  '{{ range .service_definitions }}{{ range $k, $v := .configs }}{{ $k }}{{ "\n" }}{{ end }}{{end }}'
+  # Show all the options for module configs:
+  '{{ range .module_definitions }}{{ range $k, $v := .configs }}{{ $k }}{{ "\n" }}{{ end }}{{end }}'
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := processTemplate(format, cfg, cmd.OutOrStdout())

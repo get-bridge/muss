@@ -19,11 +19,11 @@ secret_commands:
     cache: none
 secret_passphrase: $USER.g
 
-default_service_preference:
+default_module_order:
   - registry
   - repo
 
-service_files:
+module_files:
   - ./testdata/app.yml
   - ./testdata/microservice.yml
   - ./testdata/store.yml

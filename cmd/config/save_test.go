@@ -44,7 +44,7 @@ func TestConfigSaveCommand(t *testing.T) {
 
 			cfg, err := config.NewConfigFromMap(map[string]interface{}{
 				"project_name": "s1",
-				"service_definitions": []map[string]interface{}{
+				"module_definitions": []map[string]interface{}{
 					map[string]interface{}{
 						"name": "app",
 						"configs": map[string]interface{}{
