@@ -94,8 +94,19 @@ user: {service_preference: [repo, registry]}
 user: {service_preference: [registry, repo]}
 `
 
+	secretConfig := `
+secret_passphrase: $MUSS_TEST_PASSPHRASE
+secret_commands:
+  print:
+    exec: [echo]
+  show:
+    exec: [echo]
+`
+
 	expRepo := testutil.ReadFile(t, "../testdata/expectations/repo.yml")
 	expRegistry := testutil.ReadFile(t, "../testdata/expectations/registry.yml")
+	expRepoMsRemote := testutil.ReadFile(t, "../testdata/expectations/user-repo-ms-remote.yml")
+	expRegistryMsRepo := testutil.ReadFile(t, "../testdata/expectations/user-registry-ms-repo.yml")
 
 	t.Run("repo preference", func(t *testing.T) {
 		config := preferRepo + serviceFiles
@@ -116,9 +127,7 @@ user: {service_preference: [registry, repo]}
 user_file: ../testdata/user-registry-ms-repo.yml
 `
 
-		exp := testutil.ReadFile(t, "../testdata/expectations/user-registry-ms-repo.yml")
-
-		assertComposed(t, config, exp, "user preference overrides orders")
+		assertComposed(t, config, expRegistryMsRepo, "user preference overrides orders")
 	})
 
 	t.Run("env var custom service config", func(t *testing.T) {
@@ -189,13 +198,7 @@ user:
 		setCacheRoot("/tmp/.muss-test-cache")
 
 		os.Setenv("MUSS_TEST_PASSPHRASE", "decomposing")
-		config := preferRegistry + serviceFiles + `
-secret_passphrase: $MUSS_TEST_PASSPHRASE
-secret_commands:
-  print:
-    exec: [echo]
-  show:
-    exec: [echo]
+		config := preferRegistry + serviceFiles + secretConfig + `
 user:
   service_preference: [repo]
   services:
@@ -203,9 +206,7 @@ user:
       config: remote
 `
 
-		exp := testutil.ReadFile(t, "../testdata/expectations/user-registry-ms-remote.yml")
-
-		projectConfig := assertComposed(t, config, exp, "service defs with secrets")
+		projectConfig := assertComposed(t, config, expRepoMsRemote, "service defs with secrets")
 
 		if len(projectConfig.Secrets) != 3 {
 			t.Fatalf("expected 3 secrets, found %d", len(projectConfig.Secrets))
