@@ -138,7 +138,7 @@ func (cfg *ProjectConfig) checkComposeFileVar() {
 		}
 	}
 
-	cfg.Warnings = append(cfg.Warnings, fmt.Sprintf("COMPOSE_FILE is set but does not contain muss target '%s'.", cfg.ComposeFilePath()))
+	cfg.Warn(fmt.Sprintf("COMPOSE_FILE is set but does not contain muss target '%s'.", cfg.ComposeFilePath()))
 }
 
 func yamlDump(object map[string]interface{}) ([]byte, error) {
