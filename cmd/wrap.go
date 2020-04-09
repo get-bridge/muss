@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"fmt"
+	"errors"
 	"os"
 	"os/exec"
 
@@ -34,10 +34,10 @@ Usage: wrap [options] [COMMAND ARGS...]`,
 
 			if useExec {
 				if len(shellCommands) > 0 {
-					return fmt.Errorf("--exec and -c are mutually exclusive")
+					return errors.New("--exec and -c are mutually exclusive")
 				}
 				if len(args) < 1 {
-					return fmt.Errorf("--exec requires a command")
+					return errors.New("--exec requires a command")
 				}
 
 				return proc.Exec(args)

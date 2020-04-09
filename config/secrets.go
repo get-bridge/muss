@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/sha1"
 	"crypto/sha512"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/big"
@@ -83,7 +84,7 @@ func parseSecret(cfg *ProjectConfig, spec map[string]interface{}) (*secretCmd, e
 			var ok bool
 			args, ok = stringSlice(v)
 			if !ok {
-				return nil, fmt.Errorf("value for secret args must be a list")
+				return nil, errors.New("value for secret args must be a list")
 			}
 		}
 	}
@@ -153,11 +154,11 @@ func (s *secretCmd) Passphrase() ([]byte, error) {
 	if s.passphrase != "" {
 		expandedPassphrase = expandWarnOnEmpty(s.passphrase)
 		if s.passphrase == expandedPassphrase {
-			return nil, fmt.Errorf("passphrase should contain a variable so it isn't plain text")
+			return nil, errors.New("passphrase should contain a variable so it isn't plain text")
 		}
 	}
 	if expandedPassphrase == "" {
-		return nil, fmt.Errorf("a passphrase is required to use secrets")
+		return nil, errors.New("a passphrase is required to use secrets")
 	}
 	return []byte(expandedPassphrase), nil
 }

@@ -72,7 +72,7 @@ func loadEnv(e envLoader) error {
 	if !e.ShouldParse() {
 		varname := e.VarName()
 		if varname == "" {
-			return fmt.Errorf(`env command must have either "parse: true" or a "varname"`)
+			return errors.New(`env command must have either "parse: true" or a "varname"`)
 		}
 		// Only get it if not already set.
 		if _, ok := os.LookupEnv(varname); !ok {
@@ -86,7 +86,7 @@ func loadEnv(e envLoader) error {
 		}
 	} else {
 		if e.VarName() != "" {
-			return fmt.Errorf(`use "parse: true" or "varname", not both`)
+			return errors.New(`use "parse: true" or "varname", not both`)
 		}
 		// If we don't know what env vars it will load
 		// we have to call it.
