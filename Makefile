@@ -4,7 +4,7 @@ BUILD_ARCH_LIST = 386 amd64
 MODULE = gerrit.instructure.com/muss
 VERSION_VAR = $(MODULE)/cmd.Version
 VERSION = $(shell git describe --tags --long --always --match 'v[0-9]*' | sed -e 's/-/./')
-BUILD_ARGS = -ldflags '-X $(VERSION_VAR)=$(VERSION)'
+BUILD_ARGS = -tags netgo -ldflags '-X $(VERSION_VAR)=$(VERSION)'
 
 .PHONY: build
 

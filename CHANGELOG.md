@@ -1,5 +1,6 @@
 # v0.8 - Unreleased
 
+- Build statically linked executables.
 - Rename "service" muss concept to "module" to improve clarity.
   Show deprecation warnings when old names are used.
 
