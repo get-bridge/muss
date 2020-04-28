@@ -1,11 +1,8 @@
-docker_image = "golang:1.13"
-docker_volume = "muss_go_mods${env.BUILD_NUMBER}"
+docker_image = "muss:${env.BUILD_NUMBER}"
 
 def drun(docker_args, cmd) {
   sh """
     docker run \
-      -v ${docker_volume}:/go \
-      -v "\$WORKSPACE:/mnt:ro" -w /mnt \
       -e GOPRIVATE -e GO111MODULE \
       ${docker_args} \
       ${docker_image} ${cmd}
@@ -29,22 +26,21 @@ pipeline {
   stages {
     stage('Build') {
       steps {
-        sh """docker pull ${docker_image}"""
-        go("build")
+        sh """docker build --pull -f ci/Dockerfile --tag ${docker_image} ."""
       }
     }
     stage('Tests') {
       parallel {
         stage('Test') {
           environment {
-            container = "muss${env.BUILD_NUMBER}"
             coverage_vol = "muss_coverage"
+            container = "muss${env.BUILD_NUMBER}"
           }
           steps {
             sh "mkdir -p coverage"
-            drun("--name '${env.container}' -v ${env.coverage_vol}:/mnt/coverage", "make test")
+            drun("--name '${env.container}' -v ${env.coverage_vol}:/src/coverage", "make test")
             sh """
-              docker cp "${env.container}:/mnt/coverage" ./
+              docker cp "${env.container}:/src/coverage" ./
               docker rm "${env.container}"
               docker volume rm "${env.coverage_vol}"
             """
@@ -69,11 +65,24 @@ pipeline {
         }
       }
     }
+    stage('Post-Merge') {
+      when { environment name: "GERRIT_EVENT_TYPE", value: "change-merged" }
+      environment {
+        DOCKER_TAG = 'starlord.inscloudgate.net/deploy/muss:latest'
+      }
+      steps {
+        sh """
+          docker tag ${docker_image} ${DOCKER_TAG}
+          docker push ${DOCKER_TAG}
+          docker rmi ${DOCKER_TAG}
+        """
+      }
+    }
   }
   post {
     always {
       sh """
-        docker volume rm "${docker_volume}"
+        docker rmi "${docker_image}"
       """
     }
   }

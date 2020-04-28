@@ -7,3 +7,11 @@
       - premerge:
           name: muss
           script: ci/premerge/Jenkinsfile
+      - postmerge:
+          name: muss postmerge
+          script: ci/premerge/Jenkinsfile
+          job-triggers:
+            - inst-gerrit:
+                trigger-on:
+                  - change-merged-event
+                repo: '{repo}'
