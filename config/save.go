@@ -19,24 +19,11 @@ func (cfg *ProjectConfig) Save() error {
 }
 
 // Assume that if a volume is pointing to an existing file they probably meant it.
-func ensureExistsOrDir(file string) error {
-	if _, err := os.Stat(file); err != nil {
-
-		// If there was an error other not non-existence, return it.
-		if !os.IsNotExist(err) {
-			return err
-		}
-
-		if err := ensureDir(file); err != nil {
-			// If we failed to make the directory because of a permission error
-			// we do nothing and let docker deal with it.
-			// This allows, e.g., "/dev/shm:/dev/shm" to work in Docker For Mac.
-			if !os.IsPermission(err) {
-				return err
-			}
-		}
-	}
-
+func attemptEnsureMountPointExists(file string) error {
+	// MkdirAll will only proceed if the path doesn't already exist (file or dir).
+	ensureDir(file)
+	// Ignore any errors (permission or special FS issues) and let
+	// docker-compose / docker deal with anything that doesn't exist.
 	return nil
 }
 

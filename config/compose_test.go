@@ -436,10 +436,10 @@ func TestPrepareVolumes(t *testing.T) {
 				},
 			},
 			FileGenMap{
-				"named_mount": ensureExistsOrDir,
-				"/root/dir":   ensureExistsOrDir,
-				"/root/sub":   ensureExistsOrDir,
-				"sub/root":    ensureExistsOrDir,
+				"named_mount": attemptEnsureMountPointExists,
+				"/root/dir":   attemptEnsureMountPointExists,
+				"/root/sub":   attemptEnsureMountPointExists,
+				"sub/root":    attemptEnsureMountPointExists,
 				"/file":       ensureFile,
 			},
 		)
@@ -457,11 +457,11 @@ func TestPrepareVolumes(t *testing.T) {
 				},
 			},
 			FileGenMap{
-				"foo":      ensureExistsOrDir,
-				"bar":      ensureExistsOrDir,
-				"foo/baz":  ensureExistsOrDir,
-				"t/qux":    ensureExistsOrDir,
-				"bar/quxt": ensureExistsOrDir,
+				"foo":      attemptEnsureMountPointExists,
+				"bar":      attemptEnsureMountPointExists,
+				"foo/baz":  attemptEnsureMountPointExists,
+				"t/qux":    attemptEnsureMountPointExists,
+				"bar/quxt": attemptEnsureMountPointExists,
 			},
 		)
 	})

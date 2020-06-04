@@ -202,7 +202,7 @@ func prepareVolumes(service map[string]interface{}) (FileGenMap, error) {
 			// else docker will create it and it will be owned by root.
 			// Test for "/" or "./something" (ignore "." and "./")
 			if strings.HasPrefix(source, "/") || (len(source) > 2 && source[0:2] == "./") {
-				prepare[path.Clean(source)] = ensureExistsOrDir
+				prepare[path.Clean(source)] = attemptEnsureMountPointExists
 			}
 			// If this is a volume that will be mounted beneath the current
 			// dir ensure the child dir exists.
@@ -212,7 +212,7 @@ func prepareVolumes(service map[string]interface{}) (FileGenMap, error) {
 						subdir := path.Clean(strings.Replace(target, wdTarget, wdSource, 1))
 						// Assume current dir is already a dir.
 						if subdir != "." {
-							prepare[subdir] = ensureExistsOrDir
+							prepare[subdir] = attemptEnsureMountPointExists
 						}
 					}
 				}
