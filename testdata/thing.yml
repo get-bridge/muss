@@ -1,0 +1,11 @@
+---
+name: thing
+configs:
+  build:
+    services:
+      thing:
+        build:
+          context: testdata
+          dockerfile: thing.Dockerfile
+        volumes:
+          - './testdata/entrypoint:/entrypoint'

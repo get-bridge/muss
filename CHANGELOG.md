@@ -5,6 +5,7 @@
   Show deprecation warnings when old names are used.
 - Don't error for any failure to precreate mount points
   (give docker(-compose) the chance to deal with it).
+- Add "recreate" command (shortcut for build/stop/rm/up).
 
 # v0.7 - 2020-02-28
 

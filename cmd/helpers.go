@@ -100,11 +100,12 @@ func dockerCmd(args ...string) *exec.Cmd {
 	return exec.Command("docker", args...)
 }
 
-func dockerComposeArgs(cmd *cobra.Command, args []string) []string {
+func dockerComposeArgs(action string, cmd *cobra.Command, args []string) []string {
 	flags := (flagDumper{}).fromCmd(cmd)
 
 	cmdargs := make([]string, 1, 1+len(flags)+len(args))
-	cmdargs[0] = cmd.CalledAs()
+	cmdargs[0] = action
+
 	cmdargs = append(cmdargs, flags...)
 	cmdargs = append(cmdargs, args...)
 
@@ -112,11 +113,15 @@ func dockerComposeArgs(cmd *cobra.Command, args []string) []string {
 }
 
 func dockerComposeCmd(cmd *cobra.Command, args []string) *exec.Cmd {
-	return exec.Command(dc, dockerComposeArgs(cmd, args)...)
+	return dockerComposeNamedCmd(cmd.CalledAs(), cmd, args)
+}
+
+func dockerComposeNamedCmd(action string, cmd *cobra.Command, args []string) *exec.Cmd {
+	return exec.Command(dc, dockerComposeArgs(action, cmd, args)...)
 }
 
 func dockerComposeExec(cmd *cobra.Command, args []string) error {
-	return proc.Exec(append([]string{dc}, dockerComposeArgs(cmd, args)...))
+	return proc.Exec(append([]string{dc}, dockerComposeArgs(cmd.CalledAs(), cmd, args)...))
 }
 
 func dockerContainerID(service string) (string, error) {
