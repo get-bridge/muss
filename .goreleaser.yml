@@ -1,0 +1,44 @@
+# This is an example goreleaser.yaml file with some sane defaults.
+# Make sure to check the documentation at http://goreleaser.com
+before:
+  hooks:
+    # You may remove this if you don't use go modules.
+    - go mod download
+    # you may remove this if you don't need go generate
+    - go generate ./...
+builds:
+  - env:
+      - CGO_ENABLED=0
+      - GOPRIVATE=github.com/instructure-bridge
+      - GO111MODULE=on
+    goos:
+      - linux
+      - darwin
+archives:
+  - replacements:
+      darwin: Darwin
+      linux: Linux
+      386: i386
+      amd64: x86_64
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+brews:
+  - name: muss
+    tap:
+      owner: instructure-bridge
+      name: homebrew-muss
+    folder: Formula
+    dependencies:
+      - name: vault
+    test: |
+      system bin/"muss", "help"
+    install: |
+      make install

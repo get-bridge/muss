@@ -5,8 +5,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"gerrit.instructure.com/muss/cmd"
-	"gerrit.instructure.com/muss/config"
+	"github.com/instructure-bridge/muss/cmd"
+	"github.com/instructure-bridge/muss/config"
 )
 
 func assertHasSubCommand(t *testing.T, args ...string) {

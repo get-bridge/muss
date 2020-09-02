@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"gerrit.instructure.com/muss/proc"
+	"github.com/instructure-bridge/muss/proc"
 )
 
 func TestRunCommand(t *testing.T) {

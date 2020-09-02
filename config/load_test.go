@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"gerrit.instructure.com/muss/testutil"
+	"github.com/instructure-bridge/muss/testutil"
 )
 
 func TestConfigLoad(t *testing.T) {
