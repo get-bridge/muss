@@ -8,9 +8,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	rootcmd "gerrit.instructure.com/muss/cmd"
-	"gerrit.instructure.com/muss/config"
-	"gerrit.instructure.com/muss/testutil"
+	rootcmd "github.com/instructure-bridge/muss/cmd"
+	"github.com/instructure-bridge/muss/config"
+	"github.com/instructure-bridge/muss/testutil"
 )
 
 func testShowCommand(t *testing.T, cfg *config.ProjectConfig, args []string) (string, string, int) {

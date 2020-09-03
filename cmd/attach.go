@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"gerrit.instructure.com/muss/config"
+	"github.com/instructure-bridge/muss/config"
 )
 
 func newAttachCommand(cfg *config.ProjectConfig) *cobra.Command {

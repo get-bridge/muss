@@ -8,8 +8,8 @@ import (
 	"github.com/spf13/cobra"
 	yaml "gopkg.in/yaml.v2"
 
-	rootcmd "gerrit.instructure.com/muss/cmd"
-	"gerrit.instructure.com/muss/config"
+	rootcmd "github.com/instructure-bridge/muss/cmd"
+	"github.com/instructure-bridge/muss/config"
 )
 
 var format = "{{ yaml . }}"

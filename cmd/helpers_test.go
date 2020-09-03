@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"gerrit.instructure.com/muss/config"
+	"github.com/instructure-bridge/muss/config"
 )
 
 // helpers

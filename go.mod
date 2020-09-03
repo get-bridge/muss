@@ -1,4 +1,4 @@
-module gerrit.instructure.com/muss
+module github.com/instructure-bridge/muss
 
 go 1.13
 

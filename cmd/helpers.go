@@ -10,9 +10,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"gerrit.instructure.com/muss/config"
-	"gerrit.instructure.com/muss/proc"
-	"gerrit.instructure.com/muss/term"
+	"github.com/instructure-bridge/muss/config"
+	"github.com/instructure-bridge/muss/proc"
+	"github.com/instructure-bridge/muss/term"
 )
 
 var dc = "docker-compose"

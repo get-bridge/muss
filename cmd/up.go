@@ -12,9 +12,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"gerrit.instructure.com/muss/config"
-	"gerrit.instructure.com/muss/proc"
-	"gerrit.instructure.com/muss/term"
+	"github.com/instructure-bridge/muss/config"
+	"github.com/instructure-bridge/muss/proc"
+	"github.com/instructure-bridge/muss/term"
 )
 
 func newUpCommand(cfg *config.ProjectConfig) *cobra.Command {
