@@ -1,28 +1,41 @@
-name: build
+name: Build And Test
+
 on:
   push: {}
+env:
+  ECR_AWS_ACCESS_KEY_ID: ${{ secrets.TRUSS_AWS_ACCESS_KEY_ID }}
+  ECR_AWS_SECRET_ACCESS_KEY: ${{ secrets.TRUSS_AWS_SECRET_ACCESS_KEY }}
+  ECR_AWS_DEFAULT_REGION: us-east-2
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      STARLORD_IMAGE_TAG: starlord.inscloudgate.net/deploy/muss
     steps:
       # general setup
-      - uses: actions/checkout@v2
-      - name: checkout private actions
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Checkout Bridge Actions
         uses: actions/checkout@v2
         with:
           repository: instructure-bridge/actions
           token: ${{ secrets.GIT_HUB_TOKEN }}
           path: .github/actions
-          ref: master
+      - name: ECR Auth
+        uses: ./.github/actions/ecr-auth
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
           go-version: 1.13
+
+      # build image
+      - name: Docker Build
+        run: |
+          docker build \
+              --tag $ECR_REGISTRY/muss:$GITHUB_SHA \
+              --tag $ECR_REGISTRY/muss:latest \
+              .
       
-      # build and test
+      # build and test golang
       - name: Unshallow
         run: git fetch --prune --unshallow
       - name: GoReleaser Build
@@ -30,32 +43,12 @@ jobs:
         with:
           version: latest
           args: build --snapshot
-      - name: Docker Build
-        run: docker build --tag ${STARLORD_IMAGE_TAG}:latest .
       - name: Test
         run: make test
 
-      # uploading for master
-      - name: Configure AWS credentials
-        if: ${{ github.ref == 'refs/heads/master' }}
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.TRUSS_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.TRUSS_AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-2
-      - name: Login to ECR
-        if: ${{ github.ref == 'refs/heads/master' }}
-        id: login_ecr
-        uses: aws-actions/amazon-ecr-login@v1
-      - name: Push To ECR
+      # push image
+      - name: Docker Push
         if: ${{ github.ref == 'refs/heads/master' }}
         run: |
-          docker tag ${STARLORD_IMAGE_TAG}:latest ${{ steps.login_ecr.outputs.registry }}/muss:latest
-          docker push ${{ steps.login_ecr.outputs.registry }}/muss:latest
-      - name: Push To Starlord
-        if: ${{ github.ref == 'refs/heads/master' }}
-        uses: ./.github/actions/starlord-push
-        with:
-          image: ${STARLORD_IMAGE_TAG}:latest
-          aws-access-key-id: ${{ secrets.STARLORD_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.STARLORD_AWS_SECRET_ACCESS_KEY }}
+          docker push $ECR_REGISTRY/muss:$GITHUB_SHA
+          docker push $ECR_REGISTRY/muss:latest
