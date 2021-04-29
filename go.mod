@@ -1,4 +1,4 @@
-module github.com/instructure-bridge/muss
+module github.com/get-bridge/muss
 
 go 1.13
 

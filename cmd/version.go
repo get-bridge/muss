@@ -6,8 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/instructure-bridge/muss/config"
-	"github.com/instructure-bridge/muss/proc"
+	"github.com/get-bridge/muss/config"
+	"github.com/get-bridge/muss/proc"
 )
 
 // Version is the program version, filled in from git during build process.

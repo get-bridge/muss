@@ -7,8 +7,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/instructure-bridge/muss/config"
-	"github.com/instructure-bridge/muss/testutil"
+	"github.com/get-bridge/muss/config"
+	"github.com/get-bridge/muss/testutil"
 )
 
 func testRootCmd(args ...string) (int, string, string) {

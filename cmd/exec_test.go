@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/instructure-bridge/muss/proc"
+	"github.com/get-bridge/muss/proc"
 )
 
 func TestExecCommand(t *testing.T) {

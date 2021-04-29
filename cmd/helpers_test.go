@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/instructure-bridge/muss/config"
+	"github.com/get-bridge/muss/config"
 )
 
 // helpers
