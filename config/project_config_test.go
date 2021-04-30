@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/instructure-bridge/muss/testutil"
+	"github.com/get-bridge/muss/testutil"
 )
 
 func newTestConfig(t *testing.T, cfgMap map[string]interface{}) *ProjectConfig {

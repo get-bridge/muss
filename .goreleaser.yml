@@ -9,7 +9,7 @@ before:
 builds:
   - env:
       - CGO_ENABLED=0
-      - GOPRIVATE=github.com/instructure-bridge
+      - GOPRIVATE=github.com/get-bridge
       - GO111MODULE=on
     goos:
       - linux
@@ -33,7 +33,7 @@ changelog:
 brews:
   - name: muss
     tap:
-      owner: instructure-bridge
+      owner: get-bridge
       name: homebrew-muss
     folder: Formula
     dependencies:

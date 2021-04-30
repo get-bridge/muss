@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/instructure-bridge/muss/term"
+	"github.com/get-bridge/muss/term"
 )
 
 func TestUpCommand(t *testing.T) {

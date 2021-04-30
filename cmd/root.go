@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	config "github.com/instructure-bridge/muss/config"
+	config "github.com/get-bridge/muss/config"
 )
 
 // CommandBuilder is a function that takes the project config as an argument

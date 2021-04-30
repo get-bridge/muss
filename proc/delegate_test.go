@@ -13,7 +13,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/instructure-bridge/muss/testutil"
+	"github.com/get-bridge/muss/testutil"
 )
 
 func TestDelegator(t *testing.T) {

@@ -3,9 +3,9 @@ package main
 import (
 	"os"
 
-	"github.com/instructure-bridge/muss/cmd"
-	_ "github.com/instructure-bridge/muss/cmd/config"
-	"github.com/instructure-bridge/muss/proc"
+	"github.com/get-bridge/muss/cmd"
+	_ "github.com/get-bridge/muss/cmd/config"
+	"github.com/get-bridge/muss/proc"
 )
 
 func main() {

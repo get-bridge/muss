@@ -17,7 +17,7 @@ jobs:
       - name: Checkout Bridge Actions
         uses: actions/checkout@v2
         with:
-          repository: instructure-bridge/actions
+          repository: get-bridge/actions
           token: ${{ secrets.GIT_HUB_TOKEN }}
           path: .github/actions
       - name: ECR Auth

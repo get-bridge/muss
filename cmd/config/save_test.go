@@ -7,9 +7,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	rootcmd "github.com/instructure-bridge/muss/cmd"
-	"github.com/instructure-bridge/muss/config"
-	"github.com/instructure-bridge/muss/testutil"
+	rootcmd "github.com/get-bridge/muss/cmd"
+	"github.com/get-bridge/muss/config"
+	"github.com/get-bridge/muss/testutil"
 )
 
 func runConfigSave(cfg *config.ProjectConfig) (string, string, int) {

@@ -3,7 +3,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/instructure-bridge/muss/config"
+	"github.com/get-bridge/muss/config"
 )
 
 func newPullCommand(cfg *config.ProjectConfig) *cobra.Command {

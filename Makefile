@@ -1,7 +1,7 @@
 BUILD_OS_LIST = darwin linux
 BUILD_ARCH_LIST = 386 amd64
 
-MODULE = github.com/instructure-bridge/muss
+MODULE = github.com/get-bridge/muss
 VERSION_VAR = $(MODULE)/cmd.Version
 VERSION = $(shell git describe --tags --long --always --match 'v[0-9]*' | sed -e 's/-/./')
 BUILD_ARGS = -tags netgo -ldflags '-X $(VERSION_VAR)=$(VERSION)'

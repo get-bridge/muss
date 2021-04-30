@@ -7,8 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/instructure-bridge/muss/config"
-	"github.com/instructure-bridge/muss/proc"
+	"github.com/get-bridge/muss/config"
+	"github.com/get-bridge/muss/proc"
 )
 
 func newWrapCommand(cfg *config.ProjectConfig) *cobra.Command {
