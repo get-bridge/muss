@@ -1,11 +1,18 @@
-# v0.8 - Unreleased
+# v0.8 - 2021-06-25
 
+- Feature: Add "recreate" command (shortcut for build/stop/rm/up).
+- Chore: Migrate to GitHub CI and the `get-bridge` org
+- Chore(Docker): bump alpine base image to latest
+- Chore(GitHub Workflows): Fetch everything on initial checkouts
+- Chore(go): Bump Go version from 1.13 to 1.16
+- Don't error for any failure to precreate mount points
+  (give docker(-compose) the chance to deal with it).
 - Build statically linked executables.
 - Rename "service" muss concept to "module" to improve clarity.
   Show deprecation warnings when old names are used.
-- Don't error for any failure to precreate mount points
-  (give docker(-compose) the chance to deal with it).
-- Add "recreate" command (shortcut for build/stop/rm/up).
+- Use `errors.New` when no formatting is needed
+- Extract testdata for reuse
+- Make a Warn method and de-duplicate warnings
 
 # v0.7 - 2020-02-28
 
