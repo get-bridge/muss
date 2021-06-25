@@ -7,20 +7,19 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    # Unshallow required for goreleaser's changelog behavior
-    - name: Unshallow
-      run: git fetch --prune --unshallow
-    # Go get'em!
-    - name: Set up Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: 1.16
-    # Release the thing!
-    - name: Run GoReleaser
-      uses: goreleaser/goreleaser-action@v2
-      with:
-        version: latest
-        args: release
-      env:
-        GITHUB_TOKEN: ${{ secrets.INSTRUCTURE_BRIDGE_GITHUB_BOT_REPO_RW }}
+      - uses: actions/checkout@v2
+        with:
+          depth: 0 # fetch everything for gorelease
+      # Go get'em!
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
+      # Release the thing!
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v2
+        with:
+          version: latest
+          args: release
+        env:
+          GITHUB_TOKEN: ${{ secrets.INSTRUCTURE_BRIDGE_GITHUB_BOT_REPO_RW }}
