@@ -15,7 +15,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          depth: 0 # fetch everything for gorelease
+          fetch-depth: 0 # fetch everything for gorelease
       - name: Checkout Bridge Actions
         uses: actions/checkout@v2
         with:
