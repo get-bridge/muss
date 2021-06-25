@@ -1,3 +1,7 @@
+# v0.9 - Unreleased
+
+- Fix install error with gorelease config
+
 # v0.8 - 2021-06-25
 
 - Feature: Add "recreate" command (shortcut for build/stop/rm/up).

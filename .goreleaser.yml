@@ -41,4 +41,4 @@ brews:
     test: |
       system bin/"muss", "help"
     install: |
-      make install
+      bin.install "muss"
