@@ -14,6 +14,8 @@ jobs:
       # general setup
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          depth: 0 # fetch everything for gorelease
       - name: Checkout Bridge Actions
         uses: actions/checkout@v2
         with:
@@ -36,8 +38,6 @@ jobs:
               .
 
       # build and test golang
-      - name: Unshallow
-        run: git fetch --prune --unshallow
       - name: GoReleaser Build
         uses: goreleaser/goreleaser-action@v2
         with:
