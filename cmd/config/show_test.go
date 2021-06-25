@@ -189,7 +189,7 @@ func TestConfigShow(t *testing.T) {
 
 		assert.Contains(t,
 			stderr,
-			`unexpected unclosed action in command`,
+			`unclosed action`,
 			"error on stderr",
 		)
 
