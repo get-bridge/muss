@@ -402,7 +402,7 @@ func TestSecretCommands(t *testing.T) {
 		cfg.SecretCommands["some"].Cache = "foo"
 
 		assert.Equal(t,
-			`time: invalid duration foo`,
+			`time: invalid duration "foo"`,
 			testSecretError(t, cfg, secretSpec))
 
 		cfg.SecretCommands["some"].Cache = "none"
