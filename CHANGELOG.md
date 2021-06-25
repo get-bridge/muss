@@ -1,4 +1,4 @@
-# v0.9 - Unreleased
+# v0.9 - 2021-06-25
 
 - Fix install error with gorelease config
 - Fix argument typo in workflows for full checkout
