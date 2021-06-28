@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/instructure/muss.svg?branch=master)](https://travis-ci.org/instructure/muss)
+[![Build Status](https://travis-ci.org/get-bridge/muss.svg?branch=master)](https://travis-ci.org/get-bridge/muss)
 
 # muss
 
@@ -29,7 +29,7 @@ in a familiar style through a series of yaml files.
 
 # Installation
 
-    brew tap instructure/muss
+    brew tap get-bridge/muss
     brew install muss
 
 
