@@ -1,5 +1,5 @@
 BUILD_OS_LIST = darwin linux
-BUILD_ARCH_LIST = 386 amd64
+BUILD_ARCH_LIST = 386 amd64 arm64
 
 MODULE = github.com/get-bridge/muss
 VERSION_VAR = $(MODULE)/cmd.Version

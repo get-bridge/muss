@@ -13,11 +13,11 @@ jobs:
     steps:
       # general setup
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0 # fetch everything for gorelease
       - name: Checkout Bridge Actions
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: get-bridge/actions
           token: ${{ secrets.GIT_HUB_TOKEN }}
@@ -25,9 +25,9 @@ jobs:
       - name: ECR Auth
         uses: ./.github/actions/ecr-auth
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
-          go-version: 1.16
+          go-version: 1.17
 
       # build image
       - name: Docker Build
@@ -39,7 +39,7 @@ jobs:
 
       # build and test golang
       - name: GoReleaser Build
-        uses: goreleaser/goreleaser-action@v2
+        uses: goreleaser/goreleaser-action@v3
         with:
           version: latest
           args: build --snapshot

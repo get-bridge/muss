@@ -1,15 +1,22 @@
 module github.com/get-bridge/muss
 
-go 1.13
+go 1.17
 
 require (
-	github.com/hashicorp/go-multierror v1.0.0
+	github.com/hashicorp/go-multierror v1.1.1
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/mitchellh/mapstructure v1.1.2
-	github.com/spf13/cobra v0.0.5
-	github.com/spf13/pflag v1.0.3
+	github.com/mitchellh/mapstructure v1.5.0
+	github.com/spf13/cobra v1.4.0
+	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.2.2
-	golang.org/x/crypto v0.0.0-20181203042331-505ab145d0a9
-	golang.org/x/sys v0.0.0-20181205085412-a5c9d58dba9a
-	gopkg.in/yaml.v2 v2.2.2
+	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e
+	gopkg.in/yaml.v2 v2.4.0
+)
+
+require (
+	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/hashicorp/errwrap v1.1.0 // indirect
+	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
 )

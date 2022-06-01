@@ -1,3 +1,11 @@
+# unreleased - 2022-06-01
+
+- Chore(go): Bump Go version from 1.16 to 1.17
+- Chore(Docker): bump alpine base image to 1.17
+- Chore(go) Run go mod tidy
+- Chore(go) Update dependencies
+- Chore(go) Add `arm64` to release script
+
 # v0.9 - 2021-06-25
 
 - Fix install error with gorelease config
