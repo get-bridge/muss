@@ -1,4 +1,4 @@
-# unreleased - 2022-06-01
+# v0.10 - 2022-06-01
 
 - Chore(go): Bump Go version from 1.16 to 1.17
 - Chore(Docker): bump alpine base image to 1.17
